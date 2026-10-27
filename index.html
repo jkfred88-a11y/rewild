@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rewild</title>
+<meta name="theme-color" content="#3f6b55">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rewild">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+/* Layout: a calm single-column field journal; tabs across the top, the log form first. */
+:root{
+  --bg:#f5f6f2; --surface:#ffffff; --sunk:#eceee8; --fg:#1f2620; --muted:#5d665e; --line:#d7dbd2;
+  --accent:#3f6b55; --accent-fg:#ffffff; --peak:#b4552d; --before:#7a8a9e; --after:#3f6b55;
+  --c1:#3f6b55; --c2:#b4552d; --c3:#5a6fa8; --c4:#9a7b2f; --c5:#7d4f86;
+  --danger:#a33a2a; --chip:#e3e9e1;
+  --display:"Spectral", Georgia, "Times New Roman", serif;
+  --body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141916; --surface:#1c231f; --sunk:#232b26; --fg:#e7ece6; --muted:#a3ada4; --line:#334039;
+  --accent:#8cc0a2; --accent-fg:#10201a; --peak:#e89470; --before:#a9b6c7; --after:#8cc0a2;
+  --c1:#8cc0a2; --c2:#e89470; --c3:#9fb0e3; --c4:#d6b866; --c5:#c9a1d3;
+  --danger:#f08c7a; --chip:#26322b; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#141916; --surface:#1c231f; --sunk:#232b26; --fg:#e7ece6; --muted:#a3ada4; --line:#334039;
+  --accent:#8cc0a2; --accent-fg:#10201a; --peak:#e89470; --before:#a9b6c7; --after:#8cc0a2;
+  --c1:#8cc0a2; --c2:#e89470; --c3:#9fb0e3; --c4:#d6b866; --c5:#c9a1d3;
+  --danger:#f08c7a; --chip:#26322b; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header.brand{display:flex;align-items:center;gap:14px}
+.logo{width:56px;height:56px;flex:none}
+header h1{letter-spacing:.01em;font-family:var(--display);font-weight:600;font-size:2rem;line-height:1.15;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);font-style:italic;font-family:var(--display);font-size:1.05rem}
+nav{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+nav a{color:var(--muted);text-decoration:none;padding:8px 12px;border-bottom:2px solid transparent;font-weight:500}
+nav a[aria-current="page"]{color:var(--fg);border-bottom-color:var(--accent)}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--display);font-weight:600;font-size:1.35rem;margin:0}
+h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0;font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.hint{color:var(--muted);font-size:.88rem;margin:0}
+label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:.92rem;min-width:0}
+label small{font-weight:400;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{min-height:72px;resize:vertical}
+.row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.suds{display:grid;gap:12px;grid-template-columns:repeat(4,1fr)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{flex-direction:row;align-items:center;gap:6px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:500}
+.seg input{width:auto;margin:0}
+.seg label:has(input:checked){background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+details summary{cursor:pointer;color:var(--muted);font-weight:500}
+button{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--line);background:var(--sunk);color:var(--fg);padding:8px 14px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.link{background:none;border:none;padding:2px 4px;color:var(--muted);font-weight:500;text-decoration:underline}
+button.danger{color:var(--danger)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.entry{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.entry:first-child{border-top:none;padding-top:0}
+.entry .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.entry .what{font-weight:600}
+.meta{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(--chip);border-radius:999px;padding:2px 10px;font-size:.82rem;font-variant-numeric:tabular-nums}
+.chip.peak{color:var(--peak);font-weight:600}
+.ref p{margin:0}.ref b{font-weight:600;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block}
+.stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.stat{background:var(--sunk);border-radius:8px;padding:10px 12px}
+.stat .n{font-family:var(--display);font-size:1.5rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:.8rem;color:var(--muted)}
+.weeknav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chart{overflow-x:auto}.chart svg{display:block;width:100%;height:auto;min-width:320px}
+.chart text{fill:var(--muted);font-family:var(--body);font-size:11px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--sw)}
+.step{display:grid;grid-template-columns:auto 1fr;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.step:first-child{border-top:none;padding-top:0}
+.step .num{font-family:var(--display);font-size:1.4rem;font-weight:600;color:var(--accent);min-width:1.6em;text-align:center}
+.status{font-size:.78rem;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--chip)}
+.status.current{background:var(--accent);color:var(--accent-fg)}
+.success{margin:0;padding:4px 0 4px 16px;border-left:3px solid var(--accent);font-family:var(--display);font-style:italic;font-size:1.08rem;line-height:1.5;color:var(--fg);text-wrap:pretty}
+.empty{color:var(--muted);font-style:italic;font-family:var(--display);font-size:1.05rem;margin:0}
+.banner{background:var(--sunk);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;font-size:.9rem;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:500;z-index:20}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.9rem}
+@media (prefers-reduced-motion: no-preference){.panel{transition:border-color .2s}}
+@media (max-width:420px){.suds{grid-template-columns:1fr 1fr;gap:8px} header h1{font-size:1.7rem}}
+
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0} [hidden]{display:none!important}
+</style>
+</head><body>
+<div class="wrap">
+  <header class="brand">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M8 41h32" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M24 41V21" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M24 26c-1-7-7-11-14-10 0 7 6 11 14 10z" fill="var(--accent)"/>
+      <path d="M24 21c1-8 7-13 15-12 0 8-6 13-15 12z" fill="var(--c4)"/>
+      <path d="M24 26c-3-3-7-6-11-7" stroke="var(--surface)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M24 21c3-4 7-7 12-9" stroke="var(--surface)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div>
+      <h1>Rewild</h1>
+      <p>Field log · works without signal</p>
+    </div>
+  </header>
+  <nav id="nav"><a href="#log">Log</a><a href="#recent">Recent</a><a href="#pyramid">Pyramid</a><a href="#sync">Sync</a></nav>
+  <div id="unsynced" class="banner" hidden></div>
+
+  <section id="v-log" class="wrap" style="gap:16px">
+    <form id="f-exp" class="panel" autocomplete="off">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap">
+        <h2 id="f-exp-title">Log an exposure</h2>
+        <p class="hint">Not every field needs an answer.</p>
+      </div>
+      <div class="row">
+        <label>Date<input type="date" id="e-date" required></label>
+        <label>Pyramid step<select id="e-step"></select></label>
+      </div>
+      <label>Activity<input type="text" id="e-activity" placeholder="Solo run, Shevlin Park 4-mile loop" required></label>
+      <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
+        <legend style="font-weight:500;font-size:.92rem;margin-bottom:4px">Did I do this alone?</legend>
+        <div class="seg">
+          <label><input type="radio" name="alone" value="Yes" id="a-yes">Yes</label>
+          <label><input type="radio" name="alone" value="No" id="a-no">No</label>
+          <label><input type="radio" name="alone" value="Partly" id="a-partly">Partly</label>
+        </div>
+      </fieldset>
+      <div>
+        <h3 style="margin-bottom:6px">SUDS, 0–100</h3>
+        <div class="suds">
+          <label>Predicted<input type="number" id="e-pred" min="0" max="100" inputmode="numeric"></label>
+          <label>Before<input type="number" id="e-before" min="0" max="100" inputmode="numeric"></label>
+          <label>Peak<input type="number" id="e-peak" min="0" max="100" inputmode="numeric"></label>
+          <label>After<input type="number" id="e-after" min="0" max="100" inputmode="numeric"></label>
+        </div>
+      </div>
+      <label>What was going on today<small>Optional: sleep, illness, stress.</small><input type="text" id="e-context"></label>
+      <label>Avoidance and autonomy<small>Did I feel an urge to avoid, monitor, seek reassurance or change plans? How did I respond?</small><textarea id="e-auto"></textarea></label>
+      <label>Freeform<small>What surprised me? What did I learn? How did I experience myself or my body?</small><textarea id="e-free"></textarea></label>
+      <label>What did I reclaim?<small>What did I get to experience because I chose to do this?</small><textarea id="e-reclaim"></textarea></label>
+      <details id="e-more"><summary>Optional: what I expected / what happened</summary>
+        <div class="row" style="margin-top:10px">
+          <label>What I expected<textarea id="e-expected"></textarea></label>
+          <label>What happened<textarea id="e-happened"></textarea></label>
+        </div>
+      </details>
+      <div class="actions"><button type="submit" class="primary" id="e-save">Save entry</button><button type="button" id="e-cancel" hidden>Cancel edit</button></div>
+    </form>
+    <form id="f-av" class="panel" autocomplete="off">
+      <h2>Considered, didn't do</h2>
+      <div class="row">
+        <label>Date<input type="date" id="v-date" required></label>
+        <label>Kind<select id="v-kind"><option>Didn't go</option><option>Cut short</option><option>Changed plans</option><option>Quiet avoidance</option></select></label>
+      </div>
+      <label>What I considered<input type="text" id="v-what" required></label>
+      <label>What happened instead, and what was going on<textarea id="v-note"></textarea></label>
+      <div class="actions"><button type="submit" class="primary" id="v-save">Save</button><button type="button" id="v-cancel" hidden>Cancel edit</button></div>
+    </form>
+  </section>
+
+  <section id="v-recent" class="panel" hidden><h2>Recent</h2><div id="recent"></div></section>
+
+  <section id="v-pyramid" class="wrap" style="gap:16px" hidden>
+    <section class="panel"><h2>Pyramid</h2><p class="hint">Edits here sync to Rewild on import. Times done counts entries on this phone.</p><div id="steps"></div></section>
+    <form class="panel" id="f-step" autocomplete="off">
+      <h3 id="f-step-title">Add a step</h3>
+      <label>Activity<input type="text" id="s-act" required></label>
+      <div class="row">
+        <label>Predicted SUDS<input type="number" id="s-pred" min="0" max="100" inputmode="numeric"></label>
+        <label>Status<select id="s-status"><option>Later</option><option>Next</option><option>Current</option><option>Done</option></select></label>
+      </div>
+      <label>Notes<textarea id="s-notes" style="min-height:48px"></textarea></label>
+      <div class="actions"><button type="submit" class="primary" id="s-save">Add step</button><button type="button" id="s-cancel" hidden>Cancel edit</button></div>
+    </form>
+  </section>
+
+  <section id="v-sync" class="wrap" style="gap:16px" hidden>
+    <section class="panel">
+      <h2>Send to Rewild</h2>
+      <p class="hint">When you have signal: save a sync file here, then open Rewild → Export → Import from phone and choose that file.</p>
+      <div class="actions"><button class="primary" id="x-sync">Save sync file</button></div>
+      <p class="meta" id="x-sync-msg"></p>
+    </section>
+    <section class="panel">
+      <h2>Update from Rewild</h2>
+      <p class="hint">After importing into Rewild, save Rewild's phone file (Export → Save file for phone) and load it here. This replaces this phone's copy with Rewild's, so do it after sending.</p>
+      <label>Rewild file<input type="file" id="x-load" accept=".json,application/json"></label>
+      <div id="x-load-confirm"></div>
+      <p class="meta" id="x-load-msg"></p>
+    </section>
+    <section class="panel">
+      <h2>Backup</h2>
+      <div class="actions"><button id="x-xlsx">Excel workbook</button><button id="x-csv">CSV: exposures</button></div>
+      <p class="meta" id="x-msg"></p>
+    </section>
+  </section>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="xlsx.full.min.js"></script>
+<script>(function(){
+const $=id=>document.getElementById(id);
+const KEY="rewild-field-v1";
+function blank(){return{exposures:[],avoidance:[],pyramid:[
+  {id:"step-yoga",n:1,activity:"One yoga class in Bend",predicted:null,status:"Current",notes:"",updatedAt:0},
+  {id:"step-shevlin",n:2,activity:"Solo run: 4-mile loop at Shevlin Park",predicted:null,status:"Current",notes:"Alone, without someone accompanying or reassuring me.",updatedAt:0}],
+  deleted:[],lastSentAt:0}}
+let S=load();
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.exposures)return Object.assign(blank(),v)}catch(e){}return blank()}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){toast("Couldn't save on this phone. Free some space and try again.");return false}}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+let editExp=null,editAv=null,editStep=null;
+const uid=p=>p+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function parse(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function mondayOf(s){const d=parse(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d)}
+function fmt(s){return parse(s).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}
+function num(v){if(v===""||v==null)return null;const n=Number(v);return isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):null}
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2600)}
+function el(tag,a,...k){const e=document.createElement(tag);for(const x in (a||{})){if(x==="class")e.className=a[x];else if(x.startsWith("on"))e.addEventListener(x.slice(2),a[x]);else e.setAttribute(x,a[x])}for(const c of k){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(String(c)))}return e}
+function confirmInline(h,label,yes){const b=el("span",{class:"confirm"},label+"?",el("button",{type:"button",class:"danger",onclick:yes},"Delete"),el("button",{type:"button",onclick:()=>b.replaceWith(h)},"Keep"));h.replaceWith(b)}
+const steps=()=>[...S.pyramid].sort((a,b)=>(a.n||0)-(b.n||0));
+const stepById=id=>S.pyramid.find(p=>p.id===id);
+function del(kind,id){S[kind]=S[kind].filter(x=>x.id!==id);S.deleted.push({kind,id,deletedAt:Date.now()});persist();render();toast("Deleted")}
+
+/* routing */
+const views=["log","recent","pyramid","sync"];
+function route(){const h=(location.hash||"#log").slice(1);const v=views.includes(h)?h:"log";views.forEach(x=>$("v-"+x).hidden=x!==v);document.querySelectorAll("#nav a").forEach(a=>{if(a.getAttribute("href")==="#"+v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});render()}
+addEventListener("hashchange",route);
+
+/* forms */
+function fillSteps(){const sel=$("e-step"),k=sel.value;sel.innerHTML="";sel.append(el("option",{value:""},"No step / other"));steps().forEach(p=>sel.append(el("option",{value:p.id},"Step "+p.n+": "+p.activity)));sel.value=k}
+function resetExp(){editExp=null;$("f-exp").reset();$("e-date").value=today();$("f-exp-title").textContent="Log an exposure";$("e-save").textContent="Save entry";$("e-cancel").hidden=true;fillSteps();const c=steps().find(p=>p.status==="Current");$("e-step").value=c?c.id:"";prefill()}
+function prefill(){const p=stepById($("e-step").value);if(p&&p.predicted!=null&&$("e-pred").value==="")$("e-pred").value=p.predicted}
+$("e-step").addEventListener("change",prefill);
+function resetAv(){editAv=null;$("f-av").reset();$("v-date").value=today();$("v-save").textContent="Save";$("v-cancel").hidden=true}
+$("f-exp").addEventListener("submit",e=>{e.preventDefault();
+  const old=editExp?S.exposures.find(x=>x.id===editExp):null;
+  const x={id:editExp||uid("p"),date:$("e-date").value,activity:$("e-activity").value.trim(),step:$("e-step").value||null,alone:(document.querySelector('input[name="alone"]:checked')||{}).value||"",
+    sudsPredicted:num($("e-pred").value),sudsBefore:num($("e-before").value),sudsPeak:num($("e-peak").value),sudsAfter:num($("e-after").value),context:$("e-context").value.trim(),
+    avoidanceAutonomy:$("e-auto").value.trim(),freeform:$("e-free").value.trim(),reclaimed:$("e-reclaim").value.trim(),expected:$("e-expected").value.trim(),happened:$("e-happened").value.trim(),
+    createdAt:old?old.createdAt:Date.now(),updatedAt:Date.now()};
+  S.exposures=S.exposures.filter(y=>y.id!==x.id);S.exposures.push(x);if(persist()){toast(editExp?"Entry updated":"Saved on this phone");resetExp();render()}});
+$("e-cancel").onclick=resetExp;
+$("f-av").addEventListener("submit",e=>{e.preventDefault();const old=editAv?S.avoidance.find(x=>x.id===editAv):null;
+  const x={id:editAv||uid("p"),date:$("v-date").value,kind:$("v-kind").value,what:$("v-what").value.trim(),note:$("v-note").value.trim(),createdAt:old?old.createdAt:Date.now(),updatedAt:Date.now()};
+  S.avoidance=S.avoidance.filter(y=>y.id!==x.id);S.avoidance.push(x);if(persist()){toast("Saved on this phone");resetAv();render()}});
+$("v-cancel").onclick=resetAv;
+function loadExp(x){editExp=x.id;location.hash="#log";fillSteps();$("e-date").value=x.date;$("e-activity").value=x.activity||"";$("e-step").value=x.step||"";
+  document.querySelectorAll('input[name="alone"]').forEach(r=>r.checked=r.value===x.alone);
+  $("e-pred").value=x.sudsPredicted??"";$("e-before").value=x.sudsBefore??"";$("e-peak").value=x.sudsPeak??"";$("e-after").value=x.sudsAfter??"";$("e-context").value=x.context||"";
+  $("e-auto").value=x.avoidanceAutonomy||"";$("e-free").value=x.freeform||"";$("e-reclaim").value=x.reclaimed||"";$("e-expected").value=x.expected||"";$("e-happened").value=x.happened||"";$("e-more").open=!!(x.expected||x.happened);
+  $("f-exp-title").textContent="Edit entry";$("e-save").textContent="Save changes";$("e-cancel").hidden=false;window.scrollTo(0,0)}
+function loadAv(x){editAv=x.id;location.hash="#log";$("v-date").value=x.date;$("v-kind").value=x.kind;$("v-what").value=x.what||"";$("v-note").value=x.note||"";$("v-save").textContent="Save changes";$("v-cancel").hidden=false;setTimeout(()=>$("f-av").scrollIntoView(),50)}
+
+/* render */
+function render(){fillSteps();renderRecent();renderSteps();renderUnsynced()}
+function renderUnsynced(){const n=[...S.exposures,...S.avoidance,...S.pyramid].filter(x=>(x.updatedAt||0)>S.lastSentAt).length+S.deleted.filter(d=>d.deletedAt>S.lastSentAt).length;const b=$("unsynced");b.hidden=!n;b.textContent=n+(n===1?" change":" changes")+" not yet sent to Rewild. When you have signal, go to Sync.";}
+function renderRecent(){const box=$("recent");box.innerHTML="";
+  const items=[...S.exposures.map(x=>({t:"e",x})),...S.avoidance.map(x=>({t:"a",x}))].sort((p,q)=>(q.x.date||"").localeCompare(p.x.date||"")||(q.x.createdAt||0)-(p.x.createdAt||0));
+  if(!items.length){box.append(el("p",{class:"empty"},"Entries you log on this phone appear here."));return}
+  items.forEach(({t,x})=>{const d=el("button",{type:"button",class:"link danger"},"Delete");
+    if(t==="e"){d.onclick=()=>confirmInline(d,"Delete this entry",()=>del("exposures",x.id));
+      const p=stepById(x.step);
+      box.append(el("div",{class:"entry"},el("div",{class:"top"},el("span",{class:"what"},x.activity||"Exposure"),el("span",{class:"meta"},fmt(x.date))),p?el("span",{class:"meta"},"Step "+p.n+": "+p.activity):null,
+        el("div",{class:"chips"},x.alone?el("span",{class:"chip"},"Alone: "+x.alone):null,el("span",{class:"chip"},"Before "+(x.sudsBefore??"–")),el("span",{class:"chip peak"},"Peak "+(x.sudsPeak??"–")),el("span",{class:"chip"},"After "+(x.sudsAfter??"–"))),
+        el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadExp(x)},"Edit"),d)))}
+    else{d.onclick=()=>confirmInline(d,"Delete",()=>del("avoidance",x.id));
+      box.append(el("div",{class:"entry"},el("div",{class:"top"},el("span",{class:"what"},x.what||"—"),el("span",{class:"meta"},fmt(x.date))),el("div",{class:"chips"},el("span",{class:"chip"},x.kind)),
+        el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadAv(x)},"Edit"),d)))}})}
+function renderSteps(){const box=$("steps");box.innerHTML="";const ps=steps();
+  if(!ps.length){box.append(el("p",{class:"empty"},"No steps yet."));return}
+  ps.forEach((p,i)=>{const n=S.exposures.filter(x=>x.step===p.id).length;const d=el("button",{type:"button",class:"link danger"},"Delete");d.onclick=()=>confirmInline(d,"Delete step "+p.n,()=>del("pyramid",p.id));
+    box.append(el("div",{class:"step"},el("div",{class:"num"},p.n),el("div",{style:"display:flex;flex-direction:column;gap:6px;min-width:0"},
+      el("div",{style:"display:flex;gap:8px;align-items:center;flex-wrap:wrap"},el("span",{style:"font-weight:600"},p.activity),el("span",{class:"status"+(p.status==="Current"?" current":"")},p.status||"Later")),
+      el("div",{class:"chips"},el("span",{class:"chip"},"Done here "+n+"×"),p.predicted!=null?el("span",{class:"chip"},"Predicted "+p.predicted):null),
+      el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadStep(p)},"Edit"),i>0?el("button",{type:"button",class:"link",onclick:()=>swap(p,ps[i-1])},"Move up"):null,i<ps.length-1?el("button",{type:"button",class:"link",onclick:()=>swap(p,ps[i+1])},"Move down"):null,d))))})}
+function swap(a,b){const t=a.n;a.n=b.n;b.n=t;a.updatedAt=b.updatedAt=Date.now();persist();render()}
+function resetStep(){editStep=null;$("f-step").reset();$("f-step-title").textContent="Add a step";$("s-save").textContent="Add step";$("s-cancel").hidden=true}
+function loadStep(p){editStep=p.id;$("s-act").value=p.activity||"";$("s-pred").value=p.predicted??"";$("s-status").value=p.status||"Later";$("s-notes").value=p.notes||"";$("f-step-title").textContent="Edit step "+p.n;$("s-save").textContent="Save changes";$("s-cancel").hidden=false;$("f-step").scrollIntoView()}
+$("s-cancel").onclick=resetStep;
+$("f-step").addEventListener("submit",e=>{e.preventDefault();const cur=editStep?stepById(editStep):null;
+  const p={id:editStep||uid("s"),n:cur?cur.n:Math.max(0,...S.pyramid.map(x=>x.n||0))+1,activity:$("s-act").value.trim(),predicted:num($("s-pred").value),status:$("s-status").value,notes:$("s-notes").value.trim(),updatedAt:Date.now()};
+  S.pyramid=S.pyramid.filter(x=>x.id!==p.id);S.pyramid.push(p);if(persist()){toast("Step saved");resetStep();render()}});
+
+/* files */
+function saveFile(name,data,type){const b=data instanceof Blob?data:new Blob([data],{type});const u=URL.createObjectURL(b);const a=el("a",{href:u,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+$("x-sync").onclick=()=>{const payload={app:"rewild",kind:"phone-sync",version:1,exportedAt:Date.now(),exposures:S.exposures,avoidance:S.avoidance,pyramid:S.pyramid,deleted:S.deleted};
+  saveFile("rewild-phone-sync-"+today()+".json",JSON.stringify(payload),"application/json");S.lastSentAt=Date.now();persist();renderUnsynced();$("x-sync-msg").textContent="Saved. Now import it in Rewild (Export → Import from phone)."};
+$("x-load").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(err){$("x-load-msg").textContent="That file isn't a Rewild file.";return}
+  if(!d||d.app!=="rewild"||!Array.isArray(d.exposures)){$("x-load-msg").textContent="That file isn't a Rewild file.";return}
+  const box=$("x-load-confirm");box.innerHTML="";const pending=[...S.exposures,...S.avoidance,...S.pyramid].filter(x=>(x.updatedAt||0)>S.lastSentAt).length;
+  box.append(el("div",{class:"confirm"},(pending?pending+" change(s) on this phone haven't been sent yet and would be lost. ":"")+"Replace this phone's copy with Rewild's ("+d.exposures.length+" exposures)?",
+    el("button",{type:"button",class:"primary",onclick:()=>{S={exposures:d.exposures,avoidance:d.avoidance||[],pyramid:d.pyramid||[],deleted:[],lastSentAt:Date.now()};persist();box.innerHTML="";$("x-load").value="";$("x-load-msg").textContent="Updated from Rewild.";resetExp();render()}},"Replace"),
+    el("button",{type:"button",onclick:()=>{box.innerHTML="";$("x-load").value=""}},"Cancel")))});
+function expRows(){return [...S.exposures].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const p=stepById(x.step);return{"Date":x.date,"Week of":mondayOf(x.date),"Activity":x.activity||"","Pyramid step":p?p.n:"","Step activity":p?p.activity:"","Alone":x.alone||"","SUDS predicted":x.sudsPredicted??"","SUDS before":x.sudsBefore??"","SUDS peak":x.sudsPeak??"","SUDS after":x.sudsAfter??"","Drop (peak - after)":(x.sudsPeak!=null&&x.sudsAfter!=null)?x.sudsPeak-x.sudsAfter:"","What was going on":x.context||"","Avoidance and autonomy":x.avoidanceAutonomy||"","Freeform":x.freeform||"","What I reclaimed":x.reclaimed||"","Expected":x.expected||"","What happened":x.happened||""}})}
+function avRows(){return [...S.avoidance].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>({"Date":x.date,"Week of":mondayOf(x.date),"Kind":x.kind||"","What I considered":x.what||"","Note":x.note||""}))}
+function csv(r){if(!r.length)return"";const h=Object.keys(r[0]);const q=v=>{v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return [h.map(q).join(","),...r.map(o=>h.map(k=>q(o[k])).join(","))].join("\r\n")}
+$("x-csv").onclick=()=>{const r=expRows();if(!r.length)return $("x-msg").textContent="No exposures yet.";saveFile("rewild-exposures-"+today()+".csv","﻿"+csv(r),"text/csv")};
+$("x-xlsx").onclick=()=>{if(!window.XLSX)return $("x-msg").textContent="Excel export isn't available; use CSV.";const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,expRows().length?XLSX.utils.json_to_sheet(expRows()):XLSX.utils.aoa_to_sheet([["Date"]]),"Exposures");
+  XLSX.utils.book_append_sheet(wb,avRows().length?XLSX.utils.json_to_sheet(avRows()):XLSX.utils.aoa_to_sheet([["Date"]]),"Considered not done");
+  saveFile("rewild-field-"+today()+".xlsx",new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})]),"")};
+
+/* offline */
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+resetExp();resetAv();route();
+})();
+</script>
+</body></html>
