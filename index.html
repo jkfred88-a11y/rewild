@@ -109,7 +109,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 window.LOCAL=(function(){
   const KEY="rewild-v2", OLD="rewild-field-v1";
   const cols=["exposures","avoidance","pyramid","weeks"];
-  let st={exposures:{},avoidance:{},pyramid:{},weeks:{},deleted:[],lastBackupAt:0};
+  let st={exposures:{},avoidance:{},pyramid:{},weeks:{},deleted:[],lastBackupAt:0,sync:{url:"",passcode:"",lastSyncAt:0,lastOkAt:0}};
   try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.exposures)st=Object.assign(st,v)}catch(e){}
   try{const o=JSON.parse(localStorage.getItem(OLD));if(o&&Array.isArray(o.exposures)&&!st.migrated){
     ["exposures","avoidance","pyramid"].forEach(k=>(o[k]||[]).forEach(it=>{if(it&&it.id&&!st[k][it.id]){const c=Object.assign({},it);delete c.id;st[k][it.id]=c}}));
@@ -124,7 +124,33 @@ window.LOCAL=(function(){
   const snap=c=>({docs:Object.keys(st[c]).map(id=>({id,exists:true,data:()=>st[c][id]}))});
   const emit=c=>L[c].forEach(f=>{try{f(snap(c))}catch(e){console.error(e)}});
   const uid=()=>"d-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
-  function write(fn,c){const backup=JSON.stringify(st);fn();try{persist()}catch(e){st=JSON.parse(backup);return Promise.reject({code:"quota_exceeded"})}emit(c);return Promise.resolve()}
+  function write(fn,c){const backup=JSON.stringify(st);fn();try{persist()}catch(e){st=JSON.parse(backup);return Promise.reject({code:"quota_exceeded"})}emit(c);schedule();return Promise.resolve()}
+  if(!st.sync)st.sync={url:"",passcode:"",lastSyncAt:0,lastOkAt:0};
+  let timer=null,busy=false,statusFn=()=>{};
+  function configured(){return !!(st.sync.url&&st.sync.passcode)}
+  function schedule(){if(!configured())return;clearTimeout(timer);timer=setTimeout(()=>sync().catch(()=>{}),3000)}
+  async function sync(){
+    if(!configured()){statusFn("Not connected to a Google Sheet yet.");return}
+    if(busy)return; if(navigator.onLine===false){statusFn("Offline. Entries are saved on this device and will sync when you have signal.");return}
+    busy=true;statusFn("Syncing…");
+    const since=st.sync.lastSyncAt||0, start=Date.now();
+    const changes={};cols.forEach(c=>{changes[c]=Object.keys(st[c]).map(id=>Object.assign({id},st[c][id])).filter(r=>since===0||(r.updatedAt||0)>since)});
+    const deletes=st.deleted.filter(d=>since===0||d.deletedAt>since);
+    try{
+      const res=await fetch(st.sync.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({passcode:st.sync.passcode,changes,deletes})});
+      const j=await res.json();
+      if(!j.ok){statusFn(j.error==="wrong_passcode"?"The passcode doesn't match the one in your Sheet's script.":"The Sheet couldn't be updated. Try again.");busy=false;return}
+      const touched=new Set();
+      cols.forEach(c=>{(j.data[c]||[]).forEach(r=>{const loc=st[c][r.id];
+        if(r.deleted){if(loc&&(loc.updatedAt||0)<=r.updatedAt){delete st[c][r.id];touched.add(c)}return}
+        if(!loc||(r.updatedAt||0)>(loc.updatedAt||0)){const v=Object.assign({},r);delete v.id;st[c][r.id]=v;touched.add(c)}})});
+      st.sync.lastSyncAt=start;st.sync.lastOkAt=Date.now();persist();touched.forEach(emit);
+      statusFn("Synced with your Google Sheet "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})+".");
+    }catch(e){statusFn("Couldn't reach your Google Sheet. Entries are safe on this device; it will try again.")}
+    busy=false}
+  addEventListener("online",()=>schedule());
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")schedule()});
+  setTimeout(()=>{if(configured())sync().catch(()=>{})},1200);
   const db={collection(c){if(!st[c])st[c]={};if(!L[c])L[c]=[];return{
     doc(id){id=id||uid();return{id,
       set:d=>write(()=>{st[c][id]=JSON.parse(JSON.stringify(d))},c),
@@ -132,7 +158,7 @@ window.LOCAL=(function(){
       delete:()=>write(()=>{delete st[c][id];st.deleted.push({kind:c,id,deletedAt:Date.now()})},c)}},
     onSnapshot(fn){L[c].push(fn);setTimeout(()=>fn(snap(c)),0);return()=>{L[c]=L[c].filter(x=>x!==fn)}}}}};
   const downloads={save({filename,data}){const b=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return Promise.resolve({status:"saved"})}};
-  return{db,downloads,deleted:()=>st.deleted.slice(),markBackup(){st.lastBackupAt=Date.now();try{persist()}catch(e){}},lastBackupAt:()=>st.lastBackupAt||0};
+  return{db,downloads,sync:()=>sync(),onStatus(f){statusFn=f},getSync:()=>Object.assign({},st.sync),setSync(url,pc){const ch=url!==st.sync.url;st.sync.url=url;st.sync.passcode=pc;if(ch)st.sync.lastSyncAt=0;try{persist()}catch(e){}},deleted:()=>st.deleted.slice(),markBackup(){st.lastBackupAt=Date.now();try{persist()}catch(e){}},lastBackupAt:()=>st.lastBackupAt||0};
 })();
 if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 </script>
@@ -159,6 +185,7 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
   <nav id="nav">
     <a href="#log">Log</a><a href="#week">Week</a><a href="#trends">Trends</a><a href="#pyramid">Pyramid</a><a href="#export">Export</a>
   </nav>
+  <p class="meta" id="sync-chip" style="margin:-8px 0 0"></p>
   <div id="banner" class="banner" hidden></div>
 
   <!-- LOG -->
@@ -338,8 +365,7 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
   <section id="v-export" class="wrap" hidden>
     <section class="panel">
       <h2>Export</h2>
-      <p class="hint">One row per entry, clean columns, ready for Excel or R.</p>
-      <div class="actions">
+            <div class="actions">
         <button class="primary" id="x-xlsx">Excel workbook (all)</button>
         <button id="x-csv-e">CSV: exposures</button>
         <button id="x-csv-a">CSV: considered, didn't do</button>
@@ -347,9 +373,17 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
       </div>
       <p class="meta" id="x-msg"></p>
     </section>
+    <section class="panel" id="sync-panel">
+      <h2>Google Sheet sync</h2>
+      <p class="hint">Connect your own Google Sheet so every device stays in sync and your entries are stored long term in your Google Drive. Entries still save on this device first, so Rewild works without signal.</p>
+      <label>Sheet sync link<small>The Web app URL from your Sheet's Apps Script deployment.</small><input type="url" id="g-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
+      <label>Passcode<small>The same passcode you put in the script. Use the same link and passcode on every device.</small><input type="text" id="g-pass" autocomplete="off" spellcheck="false"></label>
+      <div class="actions"><button type="button" class="primary" id="g-save">Connect and sync</button><button type="button" id="g-now">Sync now</button><button type="button" class="link" id="g-gen">Make a passcode</button></div>
+      <p class="meta" id="g-status"></p>
+    </section>
     <section class="panel">
       <h2>Backup and moving devices</h2>
-      <p class="hint">Your entries are stored only on this device. Nothing is sent to Claude or GitHub. Save a backup file regularly. To use Rewild on another device, save a backup here and restore it there; restoring merges, keeping the newest version of each entry.</p>
+      <p class="hint">Save a backup file regularly. To use Rewild on another device, save a backup here and restore it there; restoring merges, keeping the newest version of each entry.</p>
       <div class="actions"><button class="primary" id="x-phone">Save backup file</button></div>
       <label>Restore from a backup file<input type="file" id="x-import" accept=".json,application/json"></label>
       <p class="meta" id="x-sync-msg"></p>
@@ -393,7 +427,7 @@ function fillStepSelect(){const sel=$("e-step");const keep=sel.value;sel.innerHT
 
 $("f-exp").addEventListener("submit",async e=>{e.preventDefault();if(!db)return toast("Saving isn't available here.");
   const alone=(document.querySelector('input[name="alone"]:checked')||{}).value||"";
-  const body={date:$("e-date").value,activity:$("e-activity").value.trim(),step:$("e-step").value||null,alone,
+  const body={date:$("e-date").value,activity:$("e-activity").value.trim(),step:$("e-step").value||null,stepName:(p=>p?"Step "+p.n+": "+p.activity:"")(stepById($("e-step").value)),alone,
     sudsPredicted:num($("e-pred").value),sudsBefore:num($("e-before").value),context:$("e-context").value.trim(),sudsPeak:num($("e-peak").value),sudsAfter:num($("e-after").value),
     avoidanceAutonomy:$("e-auto").value.trim(),freeform:$("e-free").value.trim(),reclaimed:$("e-reclaim").value.trim(),
     expected:$("e-expected").value.trim(),happened:$("e-happened").value.trim(),
@@ -596,4 +630,16 @@ resetExp();resetAv();route();
 })();
 </script>
 
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const set=m=>{$("g-status").textContent=m;$("sync-chip").textContent=m};
+  LOCAL.onStatus(set);
+  const cfg=LOCAL.getSync();$("g-url").value=cfg.url||"";$("g-pass").value=cfg.passcode||"";
+  set(cfg.url&&cfg.passcode?(cfg.lastOkAt?"Last synced "+new Date(cfg.lastOkAt).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+".":"Connected; not synced yet."):"Not connected to a Google Sheet yet. Set it up in Export.");
+  $("g-gen").onclick=()=>{const a=new Uint8Array(12);crypto.getRandomValues(a);$("g-pass").value=Array.from(a,b=>"abcdefghjkmnpqrstuvwxyz23456789"[b%31]).join("");$("g-status").textContent="Passcode made. Copy it into the script too, exactly as shown."};
+  $("g-save").onclick=()=>{const u=$("g-url").value.trim(),p=$("g-pass").value.trim();if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){$("g-status").textContent="That doesn't look like an Apps Script web app link. It should start with https://script.google.com/";return}if(!p){$("g-status").textContent="Add the passcode first.";return}LOCAL.setSync(u,p);LOCAL.sync()};
+  $("g-now").onclick=()=>LOCAL.sync();
+})();
+</script>
 </body></html>
