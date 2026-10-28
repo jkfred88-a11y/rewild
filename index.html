@@ -10,6 +10,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=Public+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: a calm single-column field journal; tabs across the top, the log form first. */
 :root{
@@ -96,9 +98,45 @@ button:disabled{opacity:.5;cursor:not-allowed}
 @media (max-width:420px){.suds{grid-template-columns:1fr 1fr;gap:8px} header h1{font-size:1.7rem}}
 
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-body{margin:0} [hidden]{display:none!important}
+[hidden]{display:none!important}
 </style>
+<script>
+/* Local-only storage: everything stays in this browser on this device. */
+window.LOCAL=(function(){
+  const KEY="rewild-v2", OLD="rewild-field-v1";
+  const cols=["exposures","avoidance","pyramid","weeks"];
+  let st={exposures:{},avoidance:{},pyramid:{},weeks:{},deleted:[],lastBackupAt:0};
+  try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.exposures)st=Object.assign(st,v)}catch(e){}
+  try{const o=JSON.parse(localStorage.getItem(OLD));if(o&&Array.isArray(o.exposures)&&!st.migrated){
+    ["exposures","avoidance","pyramid"].forEach(k=>(o[k]||[]).forEach(it=>{if(it&&it.id&&!st[k][it.id]){const c=Object.assign({},it);delete c.id;st[k][it.id]=c}}));
+    (o.deleted||[]).forEach(d=>st.deleted.push(d));st.migrated=true;}}catch(e){}
+  if(!st.seeded){const gone=new Set(st.deleted.map(d=>d.id));
+    if(!st.pyramid["step-yoga"]&&!gone.has("step-yoga"))st.pyramid["step-yoga"]={n:1,activity:"One yoga class in Bend",predicted:null,status:"Current",notes:"",updatedAt:0};
+    if(!st.pyramid["step-shevlin"]&&!gone.has("step-shevlin"))st.pyramid["step-shevlin"]={n:2,activity:"Solo run: 4-mile loop at Shevlin Park",predicted:null,status:"Current",notes:"Alone, without someone accompanying or reassuring me.",updatedAt:0};st.seeded=true}
+  function persist(){localStorage.setItem(KEY,JSON.stringify(st))}
+  try{persist()}catch(e){}
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  const L={};cols.forEach(c=>L[c]=[]);
+  const snap=c=>({docs:Object.keys(st[c]).map(id=>({id,exists:true,data:()=>st[c][id]}))});
+  const emit=c=>L[c].forEach(f=>{try{f(snap(c))}catch(e){console.error(e)}});
+  const uid=()=>"d-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
+  function write(fn,c){const backup=JSON.stringify(st);fn();try{persist()}catch(e){st=JSON.parse(backup);return Promise.reject({code:"quota_exceeded"})}emit(c);return Promise.resolve()}
+  const db={collection(c){if(!st[c])st[c]={};if(!L[c])L[c]=[];return{
+    doc(id){id=id||uid();return{id,
+      set:d=>write(()=>{st[c][id]=JSON.parse(JSON.stringify(d))},c),
+      update:d=>write(()=>{st[c][id]=Object.assign({},st[c][id]||{},JSON.parse(JSON.stringify(d)))},c),
+      delete:()=>write(()=>{delete st[c][id];st.deleted.push({kind:c,id,deletedAt:Date.now()})},c)}},
+    onSnapshot(fn){L[c].push(fn);setTimeout(()=>fn(snap(c)),0);return()=>{L[c]=L[c].filter(x=>x!==fn)}}}}};
+  const downloads={save({filename,data}){const b=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return Promise.resolve({status:"saved"})}};
+  return{db,downloads,deleted:()=>st.deleted.slice(),markBackup(){st.lastBackupAt=Date.now();try{persist()}catch(e){}},lastBackupAt:()=>st.lastBackupAt||0};
+})();
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+
+<script src="xlsx.full.min.js"></script>
 </head><body>
+
+
 <div class="wrap">
   <header class="brand">
     <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
@@ -111,17 +149,20 @@ body{margin:0} [hidden]{display:none!important}
     </svg>
     <div>
       <h1>Rewild</h1>
-      <p>Field log · works without signal</p>
+      <p>Reclaiming a life beyond fear.</p>
     </div>
   </header>
-  <nav id="nav"><a href="#log">Log</a><a href="#recent">Recent</a><a href="#pyramid">Pyramid</a><a href="#sync">Sync</a></nav>
-  <div id="unsynced" class="banner" hidden></div>
+  <nav id="nav">
+    <a href="#log">Log</a><a href="#week">Week</a><a href="#trends">Trends</a><a href="#pyramid">Pyramid</a><a href="#export">Export</a>
+  </nav>
+  <div id="banner" class="banner" hidden></div>
 
+  <!-- LOG -->
   <section id="v-log" class="wrap" style="gap:16px">
     <form id="f-exp" class="panel" autocomplete="off">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap">
+      <div class="top" style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap">
         <h2 id="f-exp-title">Log an exposure</h2>
-        <p class="hint">Not every field needs an answer.</p>
+        <p class="hint">About five minutes. Not every field needs an answer; "I went alone anyway" is enough.</p>
       </div>
       <div class="row">
         <label>Date<input type="date" id="e-date" required></label>
@@ -130,14 +171,14 @@ body{margin:0} [hidden]{display:none!important}
       <label>Activity<input type="text" id="e-activity" placeholder="Solo run, Shevlin Park 4-mile loop" required></label>
       <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
         <legend style="font-weight:500;font-size:.92rem;margin-bottom:4px">Did I do this alone?</legend>
-        <div class="seg">
+        <div class="seg" id="e-alone">
           <label><input type="radio" name="alone" value="Yes" id="a-yes">Yes</label>
           <label><input type="radio" name="alone" value="No" id="a-no">No</label>
           <label><input type="radio" name="alone" value="Partly" id="a-partly">Partly</label>
         </div>
       </fieldset>
       <div>
-        <h3 style="margin-bottom:6px">SUDS, 0–100</h3>
+        <h3 style="margin-bottom:6px">SUDS, 0–100 <span style="text-transform:none;letter-spacing:0;font-weight:400">· rough numbers are enough</span></h3>
         <div class="suds">
           <label>Predicted<input type="number" id="e-pred" min="0" max="100" inputmode="numeric"></label>
           <label>Before<input type="number" id="e-before" min="0" max="100" inputmode="numeric"></label>
@@ -145,7 +186,7 @@ body{margin:0} [hidden]{display:none!important}
           <label>After<input type="number" id="e-after" min="0" max="100" inputmode="numeric"></label>
         </div>
       </div>
-      <label>What was going on today<small>Optional: sleep, illness, stress.</small><input type="text" id="e-context"></label>
+      <label>What was going on today<small>Optional: sleep, illness, stress, anything else.</small><input type="text" id="e-context" placeholder="Slept 6 hours; interview tomorrow"></label>
       <label>Avoidance and autonomy<small>Did I feel an urge to avoid, monitor, seek reassurance or change plans? How did I respond?</small><textarea id="e-auto"></textarea></label>
       <label>Freeform<small>What surprised me? What did I learn? How did I experience myself or my body?</small><textarea id="e-free"></textarea></label>
       <label>What did I reclaim?<small>What did I get to experience because I chose to do this?</small><textarea id="e-reclaim"></textarea></label>
@@ -155,27 +196,111 @@ body{margin:0} [hidden]{display:none!important}
           <label>What happened<textarea id="e-happened"></textarea></label>
         </div>
       </details>
-      <div class="actions"><button type="submit" class="primary" id="e-save">Save entry</button><button type="button" id="e-cancel" hidden>Cancel edit</button></div>
+      <div class="actions">
+        <button type="submit" class="primary" id="e-save">Save entry</button>
+        <button type="button" id="e-cancel" hidden>Cancel edit</button>
+      </div>
     </form>
+
     <form id="f-av" class="panel" autocomplete="off">
       <h2>Considered, didn't do</h2>
+      <p class="hint">For your check-in. A line is enough.</p>
       <div class="row">
         <label>Date<input type="date" id="v-date" required></label>
         <label>Kind<select id="v-kind"><option>Didn't go</option><option>Cut short</option><option>Changed plans</option><option>Quiet avoidance</option></select></label>
       </div>
-      <label>What I considered<input type="text" id="v-what" required></label>
+      <label>What I considered<input type="text" id="v-what" placeholder="Morning yoga class" required></label>
       <label>What happened instead, and what was going on<textarea id="v-note"></textarea></label>
       <div class="actions"><button type="submit" class="primary" id="v-save">Save</button><button type="button" id="v-cancel" hidden>Cancel edit</button></div>
     </form>
+
+    <section class="panel">
+      <h2>Recent</h2>
+      <div id="recent"></div>
+    </section>
   </section>
 
-  <section id="v-recent" class="panel" hidden><h2>Recent</h2><div id="recent"></div></section>
+  <!-- WEEK -->
+  <section id="v-week" class="wrap" style="gap:16px" hidden>
+    <blockquote class="success">Success is not the absence of fear. It is an expanding ability to make meaningful choices without allowing fear to be the sole author of those choices.</blockquote>
+    <div class="weeknav"><button id="wk-prev" aria-label="Previous week">←</button><h2 id="wk-label" style="text-align:center"></h2><button id="wk-next" aria-label="Next week">→</button></div>
+    <section class="panel">
+      <h3>Exposure review</h3>
+      <div class="stats" id="wk-stats"></div>
+      <div id="wk-exp"></div>
+    </section>
+    <section class="panel">
+      <h3>Avoidance patterns</h3>
+      <div id="wk-av"></div>
+    </section>
+    <form class="panel" id="f-wk" autocomplete="off">
+      <h3>Check-in notes</h3>
+      <label>Avoidance patterns<small>Where did avoidance or reassurance-seeking show up this week, including what I considered and didn't do?</small><textarea id="w-avpat"></textarea></label>
+      <label>Learning<small>What changed in my relationship with fear, uncertainty or my body?</small><textarea id="w-learn"></textarea></label>
+      <div class="row">
+        <label>Deeper reflection theme<select id="w-theme">
+          <option value="">Choose one, if useful</option>
+          <optgroup label="Weekly themes">
+          <option>Agency: When did I feel most capable of choosing what I wanted?</option>
+          <option>Uncertainty: What did I allow to remain uncertain without trying to resolve it?</option>
+          <option>Identity: Who was I when I wasn't organizing my behavior around fear?</option>
+          <option>Avoidance: What did avoidance promise me, and what did it actually cost?</option>
+          <option>Freedom: What became possible because I approached something instead of avoiding it?</option>
+          <option>Progress: Am I expanding my life, or simply completing assignments?</option>
+          </optgroup>
+          <optgroup label="My relationship with my body">
+            <option>Body: Did I experience my body primarily as something to monitor, protect, control, or inhabit?</option>
+            <option>Body: Was I participating in the activity, or primarily observing myself for signs of danger?</option>
+            <option>Body: Was there a moment when I became absorbed in what I was doing rather than in the possibility of something happening?</option>
+          </optgroup>
+          <optgroup label="Agency and autonomy">
+            <option>Agency: Did I feel like I was making a choice, or following a rule imposed by fear?</option>
+            <option>Agency: What did I do that I previously would have needed reassurance, permission, or accompaniment to do?</option>
+          </optgroup>
+          <optgroup label="Uncertainty and avoidance">
+            <option>Avoidance: What became possible because I approached something instead of avoiding it?</option>
+          </optgroup>
+          <optgroup label="Identity and progress">
+            <option>Identity: What did I notice about myself when I wasn't organizing my behavior around fear?</option>
+          </optgroup>
+        </select></label>
+      </div>
+      <label>Reflection<textarea id="w-reflect"></textarea></label>
+      <div class="row">
+        <label>Phase (optional)<select id="w-phase"><option value="">None</option><option>Baseline</option><option>Phase 1</option><option>Phase 2</option><option>Phase 3</option><option>Phase 4</option></select></label>
+        <label>Next step on the hierarchy<select id="w-decision"><option value="">Decide in session</option><option>Repeat</option><option>Vary</option><option>Advance</option></select></label>
+      </div>
+      <label>Why this decision<small>What I did, how I responded to avoidance, what I learned. Not SUDS alone.</small><textarea id="w-why" style="min-height:56px"></textarea></label>
+      <label>Next exposures<small>With the SUDS you predict for each.</small><textarea id="w-next" placeholder="Yoga class Tuesday (predict 40); Shevlin loop Saturday morning (predict 60)"></textarea></label>
+      <details id="w-q"><summary>Questionnaire scores (optional)</summary>
+        <div class="row" style="margin-top:10px">
+          <label>Cardiac Anxiety Questionnaire<input type="number" id="w-caq" step="any" inputmode="decimal"></label>
+          <label>GAD-7<input type="number" id="w-gad" min="0" max="21" inputmode="numeric"></label>
+          <label>Life-Space Assessment<input type="number" id="w-lsa" step="any" inputmode="decimal"></label>
+          <label>Athletic Identity (AIMS)<input type="number" id="w-aims" step="any" inputmode="decimal"></label>
+        </div>
+      </details>
+      <div class="actions"><button type="submit" class="primary" id="w-save">Save notes</button><span class="meta" id="w-saved"></span></div>
+    </form>
+  </section>
 
+  <!-- TRENDS -->
+  <section id="v-trends" class="wrap" style="gap:16px" hidden>
+    <section class="panel"><h2>SUDS over time</h2><div class="legend"><span style="--sw:var(--muted)">Predicted (dashed)</span><span style="--sw:var(--before)">Before</span><span style="--sw:var(--peak)">Peak</span><span style="--sw:var(--after)">After</span></div><div class="chart" id="ch-suds"></div></section>
+    <section class="panel"><h2>Peak SUDS by attempt, for each step</h2><p class="hint">Is the same step getting easier, or not? Either is information.</p><div class="legend" id="lg-steps"></div><div class="chart" id="ch-steps"></div></section>
+    <section class="panel"><h2>Each week</h2><div class="legend"><span style="--sw:var(--accent)">Exposures done alone</span><span style="--sw:var(--c3)">Exposures with company</span><span style="--sw:var(--c4)">Considered, didn't do</span></div><div class="chart" id="ch-weeks"></div></section>
+  </section>
+
+  <!-- PYRAMID -->
   <section id="v-pyramid" class="wrap" style="gap:16px" hidden>
-    <section class="panel"><h2>Pyramid</h2><p class="hint">Edits here sync to Rewild on import. Times done counts entries on this phone.</p><div id="steps"></div></section>
+    <section class="panel">
+      <h2>Pyramid</h2>
+      <p class="hint">Edit freely. Times done and SUDS fill in from your log.</p>
+      <div id="steps"></div>
+    </section>
     <form class="panel" id="f-step" autocomplete="off">
       <h3 id="f-step-title">Add a step</h3>
-      <label>Activity<input type="text" id="s-act" required></label>
+      <label>Activity<input type="text" id="s-act" required placeholder="Solo hike, 2 miles from the car"></label>
       <div class="row">
         <label>Predicted SUDS<input type="number" id="s-pred" min="0" max="100" inputmode="numeric"></label>
         <label>Status<select id="s-status"><option>Later</option><option>Next</option><option>Current</option><option>Done</option></select></label>
@@ -185,138 +310,266 @@ body{margin:0} [hidden]{display:none!important}
     </form>
   </section>
 
-  <section id="v-sync" class="wrap" style="gap:16px" hidden>
+  <!-- EXPORT -->
+  <section id="v-export" class="wrap" hidden>
     <section class="panel">
-      <h2>Send to Rewild</h2>
-      <p class="hint">When you have signal: save a sync file here, then open Rewild → Export → Import from phone and choose that file.</p>
-      <div class="actions"><button class="primary" id="x-sync">Save sync file</button></div>
-      <p class="meta" id="x-sync-msg"></p>
-    </section>
-    <section class="panel">
-      <h2>Update from Rewild</h2>
-      <p class="hint">After importing into Rewild, save Rewild's phone file (Export → Save file for phone) and load it here. This replaces this phone's copy with Rewild's, so do it after sending.</p>
-      <label>Rewild file<input type="file" id="x-load" accept=".json,application/json"></label>
-      <div id="x-load-confirm"></div>
-      <p class="meta" id="x-load-msg"></p>
-    </section>
-    <section class="panel">
-      <h2>Backup</h2>
-      <div class="actions"><button id="x-xlsx">Excel workbook</button><button id="x-csv">CSV: exposures</button></div>
+      <h2>Export</h2>
+      <p class="hint">One row per entry, clean columns, ready for Excel or R.</p>
+      <div class="actions">
+        <button class="primary" id="x-xlsx">Excel workbook (all)</button>
+        <button id="x-csv-e">CSV: exposures</button>
+        <button id="x-csv-a">CSV: considered, didn't do</button>
+        <button id="x-csv-w">CSV: weekly notes</button>
+      </div>
       <p class="meta" id="x-msg"></p>
+    </section>
+    <section class="panel">
+      <h2>Backup and moving devices</h2>
+      <p class="hint">Your entries are stored only on this device. Nothing is sent to Claude or GitHub. Save a backup file regularly. To use Rewild on another device, save a backup here and restore it there; restoring merges, keeping the newest version of each entry.</p>
+      <div class="actions"><button class="primary" id="x-phone">Save backup file</button></div>
+      <label>Restore from a backup file<input type="file" id="x-import" accept=".json,application/json"></label>
+      <p class="meta" id="x-sync-msg"></p>
     </section>
   </section>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
-<script src="xlsx.full.min.js"></script>
-<script>(function(){
+<script>
+(function(){
 const $=id=>document.getElementById(id);
-const KEY="rewild-field-v1";
-function blank(){return{exposures:[],avoidance:[],pyramid:[
-  {id:"step-yoga",n:1,activity:"One yoga class in Bend",predicted:null,status:"Current",notes:"",updatedAt:0},
-  {id:"step-shevlin",n:2,activity:"Solo run: 4-mile loop at Shevlin Park",predicted:null,status:"Current",notes:"Alone, without someone accompanying or reassuring me.",updatedAt:0}],
-  deleted:[],lastSentAt:0}}
-let S=load();
-function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.exposures)return Object.assign(blank(),v)}catch(e){}return blank()}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){toast("Couldn't save on this phone. Free some space and try again.");return false}}
-try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-let editExp=null,editAv=null,editStep=null;
-const uid=p=>p+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);
-function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-function parse(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+const S={exposures:[],avoidance:[],pyramid:[],weeks:{}};
+let db=null, downloads=null, editExp=null, editAv=null, editStep=null, weekStart=mondayOf(today());
+
+/* ---------- dates ---------- */
+function today(){const d=new Date();return iso(d)}
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-function mondayOf(s){const d=parse(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return iso(d)}
-function fmt(s){return parse(s).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}
+function parse(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function mondayOf(s){const d=parse(s);const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return iso(d)}
+function addDays(s,n){const d=parse(s);d.setDate(d.getDate()+n);return iso(d)}
+function fmt(s,opt){return parse(s).toLocaleDateString(undefined,opt||{month:"short",day:"numeric"})}
 function num(v){if(v===""||v==null)return null;const n=Number(v);return isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):null}
-let tt;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2600)}
-function el(tag,a,...k){const e=document.createElement(tag);for(const x in (a||{})){if(x==="class")e.className=a[x];else if(x.startsWith("on"))e.addEventListener(x.slice(2),a[x]);else e.setAttribute(x,a[x])}for(const c of k){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(String(c)))}return e}
-function confirmInline(h,label,yes){const b=el("span",{class:"confirm"},label+"?",el("button",{type:"button",class:"danger",onclick:yes},"Delete"),el("button",{type:"button",onclick:()=>b.replaceWith(h)},"Keep"));h.replaceWith(b)}
-const steps=()=>[...S.pyramid].sort((a,b)=>(a.n||0)-(b.n||0));
-const stepById=id=>S.pyramid.find(p=>p.id===id);
-function del(kind,id){S[kind]=S[kind].filter(x=>x.id!==id);S.deleted.push({kind,id,deletedAt:Date.now()});persist();render();toast("Deleted")}
 
-/* routing */
-const views=["log","recent","pyramid","sync"];
+/* ---------- ui helpers ---------- */
+let toastT;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+function el(tag,attrs,...kids){const e=document.createElement(tag);for(const k in (attrs||{})){if(k==="class")e.className=attrs[k];else if(k.startsWith("on"))e.addEventListener(k.slice(2),attrs[k]);else e.setAttribute(k,attrs[k])}for(const c of kids){if(c==null)continue;e.append(c.nodeType?c:document.createTextNode(String(c)))}return e}
+function confirmInline(holder,label,onYes){const box=el("span",{class:"confirm"},label+"?",el("button",{type:"button",class:"danger",onclick:onYes},"Delete"),el("button",{type:"button",onclick:()=>box.replaceWith(holder)},"Keep"));holder.replaceWith(box)}
+function stepById(id){return S.pyramid.find(p=>p.id===id)}
+function stepLabel(id){const p=stepById(id);return p?("Step "+p.n+": "+p.activity):""}
+function sortedSteps(){return [...S.pyramid].sort((a,b)=>(a.n||0)-(b.n||0))}
+
+/* ---------- routing ---------- */
+const views=["log","week","trends","pyramid","export"];
 function route(){const h=(location.hash||"#log").slice(1);const v=views.includes(h)?h:"log";views.forEach(x=>$("v-"+x).hidden=x!==v);document.querySelectorAll("#nav a").forEach(a=>{if(a.getAttribute("href")==="#"+v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});render()}
-addEventListener("hashchange",route);
+window.addEventListener("hashchange",route);
 
-/* forms */
-function fillSteps(){const sel=$("e-step"),k=sel.value;sel.innerHTML="";sel.append(el("option",{value:""},"No step / other"));steps().forEach(p=>sel.append(el("option",{value:p.id},"Step "+p.n+": "+p.activity)));sel.value=k}
-function resetExp(){editExp=null;$("f-exp").reset();$("e-date").value=today();$("f-exp-title").textContent="Log an exposure";$("e-save").textContent="Save entry";$("e-cancel").hidden=true;fillSteps();const c=steps().find(p=>p.status==="Current");$("e-step").value=c?c.id:"";prefill()}
-function prefill(){const p=stepById($("e-step").value);if(p&&p.predicted!=null&&$("e-pred").value==="")$("e-pred").value=p.predicted}
-$("e-step").addEventListener("change",prefill);
+/* ---------- forms ---------- */
+function resetExp(){editExp=null;$("f-exp").reset();$("e-date").value=today();$("f-exp-title").textContent="Log an exposure";$("e-save").textContent="Save entry";$("e-cancel").hidden=true;const cur=sortedSteps().find(p=>p.status==="Current");$("e-step").value=cur?cur.id:""}
 function resetAv(){editAv=null;$("f-av").reset();$("v-date").value=today();$("v-save").textContent="Save";$("v-cancel").hidden=true}
-$("f-exp").addEventListener("submit",e=>{e.preventDefault();
-  const old=editExp?S.exposures.find(x=>x.id===editExp):null;
-  const x={id:editExp||uid("p"),date:$("e-date").value,activity:$("e-activity").value.trim(),step:$("e-step").value||null,alone:(document.querySelector('input[name="alone"]:checked')||{}).value||"",
-    sudsPredicted:num($("e-pred").value),sudsBefore:num($("e-before").value),sudsPeak:num($("e-peak").value),sudsAfter:num($("e-after").value),context:$("e-context").value.trim(),
-    avoidanceAutonomy:$("e-auto").value.trim(),freeform:$("e-free").value.trim(),reclaimed:$("e-reclaim").value.trim(),expected:$("e-expected").value.trim(),happened:$("e-happened").value.trim(),
-    createdAt:old?old.createdAt:Date.now(),updatedAt:Date.now()};
-  S.exposures=S.exposures.filter(y=>y.id!==x.id);S.exposures.push(x);if(persist()){toast(editExp?"Entry updated":"Saved on this phone");resetExp();render()}});
+function fillStepSelect(){const sel=$("e-step");const keep=sel.value;sel.innerHTML="";sel.append(el("option",{value:""},"No step / other"));sortedSteps().forEach(p=>sel.append(el("option",{value:p.id},"Step "+p.n+": "+p.activity)));sel.value=keep}
+
+$("f-exp").addEventListener("submit",async e=>{e.preventDefault();if(!db)return toast("Saving isn't available here.");
+  const alone=(document.querySelector('input[name="alone"]:checked')||{}).value||"";
+  const body={date:$("e-date").value,activity:$("e-activity").value.trim(),step:$("e-step").value||null,alone,
+    sudsPredicted:num($("e-pred").value),sudsBefore:num($("e-before").value),context:$("e-context").value.trim(),sudsPeak:num($("e-peak").value),sudsAfter:num($("e-after").value),
+    avoidanceAutonomy:$("e-auto").value.trim(),freeform:$("e-free").value.trim(),reclaimed:$("e-reclaim").value.trim(),
+    expected:$("e-expected").value.trim(),happened:$("e-happened").value.trim(),
+    createdAt:editExp?(S.exposures.find(x=>x.id===editExp)||{}).createdAt||Date.now():Date.now(),updatedAt:Date.now()};
+  $("e-save").disabled=true;
+  try{await (editExp?db.collection("exposures").doc(editExp):db.collection("exposures").doc()).set(body);toast(editExp?"Entry updated":"Entry saved");resetExp()}
+  catch(err){toast(err&&err.code==="quota_exceeded"?"Storage is full. Export, then delete old entries.":"Couldn't save. Try again.")}
+  finally{$("e-save").disabled=false}});
 $("e-cancel").onclick=resetExp;
-$("f-av").addEventListener("submit",e=>{e.preventDefault();const old=editAv?S.avoidance.find(x=>x.id===editAv):null;
-  const x={id:editAv||uid("p"),date:$("v-date").value,kind:$("v-kind").value,what:$("v-what").value.trim(),note:$("v-note").value.trim(),createdAt:old?old.createdAt:Date.now(),updatedAt:Date.now()};
-  S.avoidance=S.avoidance.filter(y=>y.id!==x.id);S.avoidance.push(x);if(persist()){toast("Saved on this phone");resetAv();render()}});
+$("e-step").addEventListener("change",()=>{const p=stepById($("e-step").value);if(p&&p.predicted!=null&&$("e-pred").value==="")$("e-pred").value=p.predicted});
+
+$("f-av").addEventListener("submit",async e=>{e.preventDefault();if(!db)return toast("Saving isn't available here.");
+  const body={date:$("v-date").value,kind:$("v-kind").value,what:$("v-what").value.trim(),note:$("v-note").value.trim(),
+    createdAt:editAv?(S.avoidance.find(x=>x.id===editAv)||{}).createdAt||Date.now():Date.now(),updatedAt:Date.now()};
+  $("v-save").disabled=true;
+  try{await (editAv?db.collection("avoidance").doc(editAv):db.collection("avoidance").doc()).set(body);toast(editAv?"Updated":"Saved");resetAv()}
+  catch(err){toast("Couldn't save. Try again.")} finally{$("v-save").disabled=false}});
 $("v-cancel").onclick=resetAv;
-function loadExp(x){editExp=x.id;location.hash="#log";fillSteps();$("e-date").value=x.date;$("e-activity").value=x.activity||"";$("e-step").value=x.step||"";
+
+function loadExp(x){editExp=x.id;$("e-date").value=x.date||today();$("e-activity").value=x.activity||"";$("e-step").value=x.step||"";
   document.querySelectorAll('input[name="alone"]').forEach(r=>r.checked=r.value===x.alone);
-  $("e-pred").value=x.sudsPredicted??"";$("e-before").value=x.sudsBefore??"";$("e-peak").value=x.sudsPeak??"";$("e-after").value=x.sudsAfter??"";$("e-context").value=x.context||"";
-  $("e-auto").value=x.avoidanceAutonomy||"";$("e-free").value=x.freeform||"";$("e-reclaim").value=x.reclaimed||"";$("e-expected").value=x.expected||"";$("e-happened").value=x.happened||"";$("e-more").open=!!(x.expected||x.happened);
-  $("f-exp-title").textContent="Edit entry";$("e-save").textContent="Save changes";$("e-cancel").hidden=false;window.scrollTo(0,0)}
-function loadAv(x){editAv=x.id;location.hash="#log";$("v-date").value=x.date;$("v-kind").value=x.kind;$("v-what").value=x.what||"";$("v-note").value=x.note||"";$("v-save").textContent="Save changes";$("v-cancel").hidden=false;setTimeout(()=>$("f-av").scrollIntoView(),50)}
+  $("e-pred").value=x.sudsPredicted??"";$("e-context").value=x.context||"";$("e-before").value=x.sudsBefore??"";$("e-peak").value=x.sudsPeak??"";$("e-after").value=x.sudsAfter??"";
+  $("e-auto").value=x.avoidanceAutonomy||"";$("e-free").value=x.freeform||"";$("e-reclaim").value=x.reclaimed||"";
+  $("e-expected").value=x.expected||"";$("e-happened").value=x.happened||"";$("e-more").open=!!(x.expected||x.happened);
+  $("f-exp-title").textContent="Edit entry";$("e-save").textContent="Save changes";$("e-cancel").hidden=false;location.hash="#log";$("f-exp").scrollIntoView({behavior:"smooth"})}
+function loadAv(x){editAv=x.id;$("v-date").value=x.date;$("v-kind").value=x.kind;$("v-what").value=x.what||"";$("v-note").value=x.note||"";$("v-save").textContent="Save changes";$("v-cancel").hidden=false;$("f-av").scrollIntoView({behavior:"smooth"})}
 
-/* render */
-function render(){fillSteps();renderRecent();renderSteps();renderUnsynced()}
-function renderUnsynced(){const n=[...S.exposures,...S.avoidance,...S.pyramid].filter(x=>(x.updatedAt||0)>S.lastSentAt).length+S.deleted.filter(d=>d.deletedAt>S.lastSentAt).length;const b=$("unsynced");b.hidden=!n;b.textContent=n+(n===1?" change":" changes")+" not yet sent to Rewild. When you have signal, go to Sync.";}
+/* ---------- entry cards ---------- */
+function expCard(x,full){
+  const del=el("button",{type:"button",class:"link danger"},"Delete");
+  del.onclick=()=>confirmInline(del,"Delete this entry",async()=>{try{await db.collection("exposures").doc(x.id).delete();toast("Deleted")}catch(e){toast("Couldn't delete.")}});
+  const chips=el("div",{class:"chips"});
+  if(x.alone)chips.append(el("span",{class:"chip"},"Alone: "+x.alone));
+  if(x.sudsPredicted!=null||x.sudsBefore!=null||x.sudsPeak!=null||x.sudsAfter!=null){chips.append(el("span",{class:"chip"},"Predicted "+(x.sudsPredicted??"–")),el("span",{class:"chip"},"Before "+(x.sudsBefore??"–")),el("span",{class:"chip peak"},"Peak "+(x.sudsPeak??"–")),el("span",{class:"chip"},"After "+(x.sudsAfter??"–")))}
+  const card=el("div",{class:"entry"},
+    el("div",{class:"top"},el("span",{class:"what"},x.activity||"Exposure"),el("span",{class:"meta"},fmt(x.date,{weekday:"short",month:"short",day:"numeric"}))),
+    x.step?el("span",{class:"meta"},stepLabel(x.step)):null, chips);
+  const ref=el("div",{class:"ref",style:"display:flex;flex-direction:column;gap:6px"});
+  [["What was going on",x.context],["Avoidance and autonomy",x.avoidanceAutonomy],["Freeform",x.freeform],["What I reclaimed",x.reclaimed],["Expected",x.expected],["What happened",x.happened]].forEach(([k,v])=>{if(v&&(full||k!=="Expected"&&k!=="What happened"))ref.append(el("p",null,el("b",null,k),v))});
+  if(ref.childNodes.length)card.append(ref);
+  if(db)card.append(el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadExp(x)},"Edit"),del));
+  return card}
+function avCard(x){
+  const del=el("button",{type:"button",class:"link danger"},"Delete");
+  del.onclick=()=>confirmInline(del,"Delete",async()=>{try{await db.collection("avoidance").doc(x.id).delete();toast("Deleted")}catch(e){toast("Couldn't delete.")}});
+  const c=el("div",{class:"entry"},el("div",{class:"top"},el("span",{class:"what"},x.what||"—"),el("span",{class:"meta"},fmt(x.date,{weekday:"short",month:"short",day:"numeric"}))),el("div",{class:"chips"},el("span",{class:"chip"},x.kind||"")),x.note?el("p",{style:"margin:0"},x.note):null);
+  if(db)c.append(el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>{location.hash="#log";loadAv(x)}},"Edit"),del));
+  return c}
+
+/* ---------- render ---------- */
+function render(){fillStepSelect();renderRecent();renderWeek();renderTrends();renderPyramid()}
+function byDateDesc(a,b){return (b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0)}
 function renderRecent(){const box=$("recent");box.innerHTML="";
-  const items=[...S.exposures.map(x=>({t:"e",x})),...S.avoidance.map(x=>({t:"a",x}))].sort((p,q)=>(q.x.date||"").localeCompare(p.x.date||"")||(q.x.createdAt||0)-(p.x.createdAt||0));
-  if(!items.length){box.append(el("p",{class:"empty"},"Entries you log on this phone appear here."));return}
-  items.forEach(({t,x})=>{const d=el("button",{type:"button",class:"link danger"},"Delete");
-    if(t==="e"){d.onclick=()=>confirmInline(d,"Delete this entry",()=>del("exposures",x.id));
-      const p=stepById(x.step);
-      box.append(el("div",{class:"entry"},el("div",{class:"top"},el("span",{class:"what"},x.activity||"Exposure"),el("span",{class:"meta"},fmt(x.date))),p?el("span",{class:"meta"},"Step "+p.n+": "+p.activity):null,
-        el("div",{class:"chips"},x.alone?el("span",{class:"chip"},"Alone: "+x.alone):null,el("span",{class:"chip"},"Before "+(x.sudsBefore??"–")),el("span",{class:"chip peak"},"Peak "+(x.sudsPeak??"–")),el("span",{class:"chip"},"After "+(x.sudsAfter??"–"))),
-        el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadExp(x)},"Edit"),d)))}
-    else{d.onclick=()=>confirmInline(d,"Delete",()=>del("avoidance",x.id));
-      box.append(el("div",{class:"entry"},el("div",{class:"top"},el("span",{class:"what"},x.what||"—"),el("span",{class:"meta"},fmt(x.date))),el("div",{class:"chips"},el("span",{class:"chip"},x.kind)),
-        el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadAv(x)},"Edit"),d)))}})}
-function renderSteps(){const box=$("steps");box.innerHTML="";const ps=steps();
-  if(!ps.length){box.append(el("p",{class:"empty"},"No steps yet."));return}
-  ps.forEach((p,i)=>{const n=S.exposures.filter(x=>x.step===p.id).length;const d=el("button",{type:"button",class:"link danger"},"Delete");d.onclick=()=>confirmInline(d,"Delete step "+p.n,()=>del("pyramid",p.id));
-    box.append(el("div",{class:"step"},el("div",{class:"num"},p.n),el("div",{style:"display:flex;flex-direction:column;gap:6px;min-width:0"},
-      el("div",{style:"display:flex;gap:8px;align-items:center;flex-wrap:wrap"},el("span",{style:"font-weight:600"},p.activity),el("span",{class:"status"+(p.status==="Current"?" current":"")},p.status||"Later")),
-      el("div",{class:"chips"},el("span",{class:"chip"},"Done here "+n+"×"),p.predicted!=null?el("span",{class:"chip"},"Predicted "+p.predicted):null),
-      el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadStep(p)},"Edit"),i>0?el("button",{type:"button",class:"link",onclick:()=>swap(p,ps[i-1])},"Move up"):null,i<ps.length-1?el("button",{type:"button",class:"link",onclick:()=>swap(p,ps[i+1])},"Move down"):null,d))))})}
-function swap(a,b){const t=a.n;a.n=b.n;b.n=t;a.updatedAt=b.updatedAt=Date.now();persist();render()}
+  const items=[...S.exposures.map(x=>({t:"e",x})),...S.avoidance.map(x=>({t:"a",x}))].sort((p,q)=>byDateDesc(p.x,q.x)).slice(0,12);
+  if(!items.length){box.append(el("p",{class:"empty"},"Your entries will appear here. Log your first exposure above: the yoga class or the Shevlin loop."));return}
+  items.forEach(i=>box.append(i.t==="e"?expCard(i.x,false):avCard(i.x)))}
+
+function avg(a){const v=a.filter(n=>n!=null);return v.length?Math.round(v.reduce((s,n)=>s+n,0)/v.length):null}
+function inWeek(d,ws){return d>=ws&&d<addDays(ws,7)}
+function renderWeek(){
+  const ws=weekStart,we=addDays(ws,6);
+  $("wk-label").textContent=fmt(ws)+" – "+fmt(we,{month:"short",day:"numeric",year:"numeric"})+((S.weeks[ws]||{}).phase?" · "+S.weeks[ws].phase:"");
+  const ex=S.exposures.filter(x=>inWeek(x.date,ws)).sort((a,b)=>a.date.localeCompare(b.date));
+  const av=S.avoidance.filter(x=>inWeek(x.date,ws)).sort((a,b)=>a.date.localeCompare(b.date));
+  const st=$("wk-stats");st.innerHTML="";
+  [[ex.length,"Exposures"],[ex.filter(x=>x.alone==="Yes").length,"Done alone"],[avg(ex.map(x=>x.sudsPredicted))??"–","Avg SUDS predicted"],[avg(ex.map(x=>x.sudsBefore))??"–","Avg SUDS before"],[avg(ex.map(x=>x.sudsPeak))??"–","Avg SUDS peak"],[avg(ex.map(x=>x.sudsAfter))??"–","Avg SUDS after"],[av.length,"Considered, didn't do"]]
+   .forEach(([n,l])=>st.append(el("div",{class:"stat"},el("div",{class:"n"},n),el("div",{class:"l"},l))));
+  const eb=$("wk-exp");eb.innerHTML="";if(!ex.length)eb.append(el("p",{class:"empty"},"No exposures logged this week."));ex.forEach(x=>eb.append(expCard(x,true)));
+  const ab=$("wk-av");ab.innerHTML="";if(!av.length)ab.append(el("p",{class:"empty"},"Nothing logged as considered and not done. If that's not the whole story, it's worth naming in session."));av.forEach(x=>ab.append(avCard(x)));
+  const w=S.weeks[ws]||{};
+  if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#f-wk"))return;
+  $("w-avpat").value=w.avoidancePatterns||"";$("w-phase").value=w.phase||"";$("w-caq").value=w.caq??"";$("w-gad").value=w.gad7??"";$("w-lsa").value=w.lifeSpace??"";$("w-aims").value=w.aims??"";$("w-q").open=[w.caq,w.gad7,w.lifeSpace,w.aims].some(v=>v!=null&&v!=="");$("w-learn").value=w.learning||"";$("w-theme").value=w.theme||"";$("w-reflect").value=w.reflection||"";$("w-decision").value=w.decision||"";$("w-why").value=w.decisionWhy||"";$("w-next").value=w.nextExposures||"";
+  $("w-saved").textContent=w.updatedAt?"Saved "+new Date(w.updatedAt).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+}
+$("wk-prev").onclick=()=>{weekStart=addDays(weekStart,-7);renderWeek()};
+$("wk-next").onclick=()=>{weekStart=addDays(weekStart,7);renderWeek()};
+$("f-wk").addEventListener("submit",async e=>{e.preventDefault();if(!db)return toast("Saving isn't available here.");
+  const qn=v=>{if(v==="")return null;const n=Number(v);return isFinite(n)?n:null};
+  const body={weekStart:weekStart,avoidancePatterns:$("w-avpat").value.trim(),phase:$("w-phase").value,caq:qn($("w-caq").value),gad7:qn($("w-gad").value),lifeSpace:qn($("w-lsa").value),aims:qn($("w-aims").value),learning:$("w-learn").value.trim(),theme:$("w-theme").value,reflection:$("w-reflect").value.trim(),decision:$("w-decision").value,decisionWhy:$("w-why").value.trim(),nextExposures:$("w-next").value.trim(),updatedAt:Date.now()};
+  $("w-save").disabled=true;try{await db.collection("weeks").doc(weekStart).set(body);toast("Notes saved");document.activeElement.blur&&document.activeElement.blur()}catch(err){toast("Couldn't save. Try again.")}finally{$("w-save").disabled=false}});
+
+/* ---------- charts (hand-drawn SVG, one scale per chart) ---------- */
+const NS="http://www.w3.org/2000/svg";
+function svg(w,h){const s=document.createElementNS(NS,"svg");s.setAttribute("viewBox","0 0 "+w+" "+h);s.setAttribute("role","img");return s}
+function sv(tag,a,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
+function yAxis(s,L,T,W,H,max,ticks){ticks.forEach(t=>{const y=T+H-(t/max)*H;s.append(sv("line",{x1:L,x2:L+W,y1:y,y2:y,stroke:"var(--line)","stroke-width":1}),sv("text",{x:L-6,y:y+4,"text-anchor":"end"},t))})}
+function emptyChart(box,msg){box.innerHTML="";box.append(el("p",{class:"empty"},msg))}
+function renderTrends(){
+  const ex=S.exposures.filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.createdAt||0)-(b.createdAt||0));
+  // SUDS over time: x = entry order, labeled by date
+  const b1=$("ch-suds");
+  if(ex.length<1)emptyChart(b1,"Your SUDS before, peak and after will chart here once you've logged an exposure.");
+  else{b1.innerHTML="";const W=640,H=240,L=36,R=14,T=12,B=34,iw=W-L-R,ih=H-T-B,s=svg(W,H);yAxis(s,L,T,iw,ih,100,[0,25,50,75,100]);
+    const n=ex.length,xp=i=>n===1?L+iw/2:L+i*(iw/(n-1));
+    [["sudsPredicted","var(--muted)"],["sudsBefore","var(--before)"],["sudsPeak","var(--peak)"],["sudsAfter","var(--after)"]].forEach(([k,c])=>{
+      let d="";ex.forEach((x,i)=>{if(x[k]==null)return;const y=T+ih-(x[k]/100)*ih;d+=(d?"L":"M")+xp(i).toFixed(1)+" "+y.toFixed(1)});
+      if(d){const pa={d,fill:"none",stroke:c,"stroke-width":k==="sudsPeak"?2.5:1.75,"stroke-linejoin":"round"};if(k==="sudsPredicted")pa["stroke-dasharray"]="5 4";s.append(sv("path",pa))}
+      ex.forEach((x,i)=>{if(x[k]==null)return;const c2=sv("circle",{cx:xp(i),cy:T+ih-(x[k]/100)*ih,r:k==="sudsPeak"?4:3,fill:c});c2.append(sv("title",{},fmt(x.date)+" · "+x.activity+" · "+k.replace("suds","")+": "+x[k]));s.append(c2)})});
+    const every=Math.max(1,Math.ceil(n/7));ex.forEach((x,i)=>{if(i%every===0||i===n-1)s.append(sv("text",{x:xp(i),y:H-12,"text-anchor":i===0&&n>1?"start":i===n-1&&n>1?"end":"middle"},fmt(x.date)))});
+    b1.append(s)}
+  // per step attempts
+  const b2=$("ch-steps"),lg=$("lg-steps");lg.innerHTML="";
+  const steps=sortedSteps().map((p,i)=>({p,c:"var(--c"+(i%5+1)+")",xs:ex.filter(x=>x.step===p.id&&x.sudsPeak!=null)})).filter(o=>o.xs.length);
+  if(!steps.length)emptyChart(b2,"Once you've logged exposures with a pyramid step and a peak SUDS, each step gets its own line here.");
+  else{b2.innerHTML="";const maxA=Math.max(2,...steps.map(o=>o.xs.length));const W=640,H=220,L=36,R=14,T=12,B=34,iw=W-L-R,ih=H-T-B,s=svg(W,H);yAxis(s,L,T,iw,ih,100,[0,25,50,75,100]);
+    const xp=a=>L+(a-1)*(iw/(maxA-1));
+    for(let a=1;a<=maxA;a++)s.append(sv("text",{x:xp(a),y:H-12,"text-anchor":a===1?"start":a===maxA?"end":"middle"},a===1?"1st":a===2?"2nd":a===3?"3rd":a+"th"));
+    steps.forEach(o=>{let d="";o.xs.forEach((x,i)=>{const y=T+ih-(x.sudsPeak/100)*ih;d+=(d?"L":"M")+xp(i+1)+" "+y});s.append(sv("path",{d,fill:"none",stroke:o.c,"stroke-width":2}));
+      o.xs.forEach((x,i)=>{const c=sv("circle",{cx:xp(i+1),cy:T+ih-(x.sudsPeak/100)*ih,r:4,fill:o.c});c.append(sv("title",{},"Step "+o.p.n+", attempt "+(i+1)+" ("+fmt(x.date)+"): peak "+x.sudsPeak));s.append(c)});
+      lg.append(el("span",{style:"--sw:"+o.c},"Step "+o.p.n+": "+o.p.activity))});
+    b2.append(s)}
+  // weekly bars
+  const b3=$("ch-weeks");const all=[...S.exposures,...S.avoidance].map(x=>x.date).filter(Boolean).sort();
+  if(!all.length)emptyChart(b3,"Weekly counts of exposures and of things considered and not done will appear here.");
+  else{b3.innerHTML="";let ws=mondayOf(all[0]);const last=mondayOf(all[all.length-1]);const wks=[];while(ws<=last){wks.push(ws);ws=addDays(ws,7)}
+    const rows=wks.map(w=>({w,alone:S.exposures.filter(x=>inWeek(x.date,w)&&x.alone==="Yes").length,comp:S.exposures.filter(x=>inWeek(x.date,w)&&x.alone!=="Yes").length,av:S.avoidance.filter(x=>inWeek(x.date,w)).length}));
+    const max=Math.max(3,...rows.map(r=>Math.max(r.alone+r.comp,r.av)));const W=640,H=220,L=36,R=14,T=12,B=34,iw=W-L-R,ih=H-T-B,s=svg(W,H);
+    const tk=[];for(let t=0;t<=max;t+=Math.max(1,Math.ceil(max/4)))tk.push(t);yAxis(s,L,T,iw,ih,max,tk);
+    const g=iw/rows.length,bw=Math.min(26,g*0.32);
+    rows.forEach((r,i)=>{const x0=L+i*g+g/2-bw-2;const h=v=>(v/max)*ih;
+      const ha=h(r.alone),hc=h(r.comp);
+      if(r.alone)s.append(sv("rect",{x:x0,y:T+ih-ha,width:bw,height:ha,fill:"var(--accent)",rx:2}));
+      if(r.comp)s.append(sv("rect",{x:x0,y:T+ih-ha-hc,width:bw,height:hc,fill:"var(--c3)",rx:2}));
+      if(r.av)s.append(sv("rect",{x:x0+bw+4,y:T+ih-h(r.av),width:bw,height:h(r.av),fill:"var(--c4)",rx:2}));
+      const every=Math.max(1,Math.ceil(rows.length/7));if(i%every===0||i===rows.length-1)s.append(sv("text",{x:L+i*g+g/2,y:H-12,"text-anchor":"middle"},fmt(r.w)))});
+    b3.append(s)}
+}
+
+/* ---------- pyramid ---------- */
+function renderPyramid(){const box=$("steps");box.innerHTML="";const ps=sortedSteps();
+  if(!ps.length){box.append(el("p",{class:"empty"},"No steps yet. Add your first two below: one yoga class, and the solo Shevlin loop."));return}
+  ps.forEach((p,idx)=>{const xs=S.exposures.filter(x=>x.step===p.id).sort((a,b)=>a.date.localeCompare(b.date));
+    const peaks=xs.map(x=>x.sudsPeak).filter(v=>v!=null);
+    const del=el("button",{type:"button",class:"link danger"},"Delete");
+    del.onclick=()=>confirmInline(del,"Delete step "+p.n,async()=>{try{await db.collection("pyramid").doc(p.id).delete();toast("Step deleted")}catch(e){toast("Couldn't delete.")}});
+    const body=el("div",{style:"display:flex;flex-direction:column;gap:6px;min-width:0"},
+      el("div",{class:"top",style:"display:flex;gap:8px;align-items:center;flex-wrap:wrap"},el("span",{class:"what",style:"font-weight:600"},p.activity),el("span",{class:"status"+(p.status==="Current"?" current":"")},p.status||"Later")),
+      el("div",{class:"chips"},el("span",{class:"chip"},"Done "+xs.length+"×"),p.predicted!=null?el("span",{class:"chip"},"Predicted "+p.predicted):null,peaks.length?el("span",{class:"chip peak"},"Last peak "+peaks[peaks.length-1]):null,peaks.length?el("span",{class:"chip"},"Lowest peak "+Math.min(...peaks)):null),
+      p.notes?el("p",{class:"hint"},p.notes):null);
+    if(db)body.append(el("div",{class:"actions"},
+      el("button",{type:"button",class:"link",onclick:()=>loadStep(p)},"Edit"),
+      idx>0?el("button",{type:"button",class:"link",onclick:()=>swap(p,ps[idx-1])},"Move up"):null,
+      idx<ps.length-1?el("button",{type:"button",class:"link",onclick:()=>swap(p,ps[idx+1])},"Move down"):null,del));
+    box.append(el("div",{class:"step"},el("div",{class:"num"},p.n),body))})}
+async function swap(a,b){try{const na=a.n,nb=b.n;await db.collection("pyramid").doc(a.id).update({n:nb,updatedAt:Date.now()});await db.collection("pyramid").doc(b.id).update({n:na,updatedAt:Date.now()})}catch(e){toast("Couldn't reorder.")}}
 function resetStep(){editStep=null;$("f-step").reset();$("f-step-title").textContent="Add a step";$("s-save").textContent="Add step";$("s-cancel").hidden=true}
-function loadStep(p){editStep=p.id;$("s-act").value=p.activity||"";$("s-pred").value=p.predicted??"";$("s-status").value=p.status||"Later";$("s-notes").value=p.notes||"";$("f-step-title").textContent="Edit step "+p.n;$("s-save").textContent="Save changes";$("s-cancel").hidden=false;$("f-step").scrollIntoView()}
+function loadStep(p){editStep=p.id;$("s-act").value=p.activity||"";$("s-pred").value=p.predicted??"";$("s-status").value=p.status||"Later";$("s-notes").value=p.notes||"";$("f-step-title").textContent="Edit step "+p.n;$("s-save").textContent="Save changes";$("s-cancel").hidden=false;$("f-step").scrollIntoView({behavior:"smooth"})}
 $("s-cancel").onclick=resetStep;
-$("f-step").addEventListener("submit",e=>{e.preventDefault();const cur=editStep?stepById(editStep):null;
-  const p={id:editStep||uid("s"),n:cur?cur.n:Math.max(0,...S.pyramid.map(x=>x.n||0))+1,activity:$("s-act").value.trim(),predicted:num($("s-pred").value),status:$("s-status").value,notes:$("s-notes").value.trim(),updatedAt:Date.now()};
-  S.pyramid=S.pyramid.filter(x=>x.id!==p.id);S.pyramid.push(p);if(persist()){toast("Step saved");resetStep();render()}});
+$("f-step").addEventListener("submit",async e=>{e.preventDefault();if(!db)return toast("Saving isn't available here.");
+  const cur=editStep?stepById(editStep):null;
+  const body={updatedAt:Date.now(),activity:$("s-act").value.trim(),predicted:num($("s-pred").value),status:$("s-status").value,notes:$("s-notes").value.trim(),n:cur?cur.n:(Math.max(0,...S.pyramid.map(p=>p.n||0))+1)};
+  $("s-save").disabled=true;try{await (editStep?db.collection("pyramid").doc(editStep):db.collection("pyramid").doc()).set(body);toast(editStep?"Step updated":"Step added");resetStep()}catch(err){toast("Couldn't save. Try again.")}finally{$("s-save").disabled=false}});
 
-/* files */
-function saveFile(name,data,type){const b=data instanceof Blob?data:new Blob([data],{type});const u=URL.createObjectURL(b);const a=el("a",{href:u,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
-$("x-sync").onclick=()=>{const payload={app:"rewild",kind:"phone-sync",version:1,exportedAt:Date.now(),exposures:S.exposures,avoidance:S.avoidance,pyramid:S.pyramid,deleted:S.deleted};
-  saveFile("rewild-phone-sync-"+today()+".json",JSON.stringify(payload),"application/json");S.lastSentAt=Date.now();persist();renderUnsynced();$("x-sync-msg").textContent="Saved. Now import it in Rewild (Export → Import from phone)."};
-$("x-load").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(err){$("x-load-msg").textContent="That file isn't a Rewild file.";return}
-  if(!d||d.app!=="rewild"||!Array.isArray(d.exposures)){$("x-load-msg").textContent="That file isn't a Rewild file.";return}
-  const box=$("x-load-confirm");box.innerHTML="";const pending=[...S.exposures,...S.avoidance,...S.pyramid].filter(x=>(x.updatedAt||0)>S.lastSentAt).length;
-  box.append(el("div",{class:"confirm"},(pending?pending+" change(s) on this phone haven't been sent yet and would be lost. ":"")+"Replace this phone's copy with Rewild's ("+d.exposures.length+" exposures)?",
-    el("button",{type:"button",class:"primary",onclick:()=>{S={exposures:d.exposures,avoidance:d.avoidance||[],pyramid:d.pyramid||[],deleted:[],lastSentAt:Date.now()};persist();box.innerHTML="";$("x-load").value="";$("x-load-msg").textContent="Updated from Rewild.";resetExp();render()}},"Replace"),
-    el("button",{type:"button",onclick:()=>{box.innerHTML="";$("x-load").value=""}},"Cancel")))});
-function expRows(){return [...S.exposures].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const p=stepById(x.step);return{"Date":x.date,"Week of":mondayOf(x.date),"Activity":x.activity||"","Pyramid step":p?p.n:"","Step activity":p?p.activity:"","Alone":x.alone||"","SUDS predicted":x.sudsPredicted??"","SUDS before":x.sudsBefore??"","SUDS peak":x.sudsPeak??"","SUDS after":x.sudsAfter??"","Drop (peak - after)":(x.sudsPeak!=null&&x.sudsAfter!=null)?x.sudsPeak-x.sudsAfter:"","What was going on":x.context||"","Avoidance and autonomy":x.avoidanceAutonomy||"","Freeform":x.freeform||"","What I reclaimed":x.reclaimed||"","Expected":x.expected||"","What happened":x.happened||""}})}
-function avRows(){return [...S.avoidance].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>({"Date":x.date,"Week of":mondayOf(x.date),"Kind":x.kind||"","What I considered":x.what||"","Note":x.note||""}))}
-function csv(r){if(!r.length)return"";const h=Object.keys(r[0]);const q=v=>{v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return [h.map(q).join(","),...r.map(o=>h.map(k=>q(o[k])).join(","))].join("\r\n")}
-$("x-csv").onclick=()=>{const r=expRows();if(!r.length)return $("x-msg").textContent="No exposures yet.";saveFile("rewild-exposures-"+today()+".csv","﻿"+csv(r),"text/csv")};
-$("x-xlsx").onclick=()=>{if(!window.XLSX)return $("x-msg").textContent="Excel export isn't available; use CSV.";const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,expRows().length?XLSX.utils.json_to_sheet(expRows()):XLSX.utils.aoa_to_sheet([["Date"]]),"Exposures");
-  XLSX.utils.book_append_sheet(wb,avRows().length?XLSX.utils.json_to_sheet(avRows()):XLSX.utils.aoa_to_sheet([["Date"]]),"Considered not done");
-  saveFile("rewild-field-"+today()+".xlsx",new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})]),"")};
+/* ---------- export ---------- */
+function expRows(){return [...S.exposures].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const p=stepById(x.step);return{
+  "Date":x.date,"Week of":mondayOf(x.date),"Activity":x.activity||"","Pyramid step":p?p.n:"","Step activity":p?p.activity:"","Alone":x.alone||"","Phase":(S.weeks[mondayOf(x.date)]||{}).phase||"","SUDS predicted":x.sudsPredicted??"",
+  "SUDS before":x.sudsBefore??"","SUDS peak":x.sudsPeak??"","SUDS after":x.sudsAfter??"","Drop (peak - after)":(x.sudsPeak!=null&&x.sudsAfter!=null)?x.sudsPeak-x.sudsAfter:"","Peak minus predicted":(x.sudsPeak!=null&&x.sudsPredicted!=null)?x.sudsPeak-x.sudsPredicted:"","What was going on":x.context||"",
+  "Avoidance and autonomy":x.avoidanceAutonomy||"","Freeform":x.freeform||"","What I reclaimed":x.reclaimed||"","Expected":x.expected||"","What happened":x.happened||""}})}
+function avRows(){return [...S.avoidance].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>({"Date":x.date,"Week of":mondayOf(x.date),"Phase":(S.weeks[mondayOf(x.date)]||{}).phase||"","Kind":x.kind||"","What I considered":x.what||"","Note":x.note||""}))}
+function wkRows(){return Object.values(S.weeks).sort((a,b)=>a.weekStart.localeCompare(b.weekStart)).map(w=>({"Week of":w.weekStart,"Phase":w.phase||"","Avoidance patterns":w.avoidancePatterns||"","Learning":w.learning||"","Theme":w.theme||"","Reflection":w.reflection||"","Next step":w.decision||"","Why":w.decisionWhy||"","Next exposures":w.nextExposures||"","CAQ":w.caq??"","GAD-7":w.gad7??"","Life-Space":w.lifeSpace??"","AIMS":w.aims??""}))}
+function stRows(){return sortedSteps().map(p=>{const xs=S.exposures.filter(x=>x.step===p.id);const pk=xs.map(x=>x.sudsPeak).filter(v=>v!=null);return{"Step":p.n,"Activity":p.activity,"Status":p.status||"","Predicted SUDS":p.predicted??"","Times done":xs.length,"Lowest peak SUDS":pk.length?Math.min(...pk):"","Notes":p.notes||""}})}
+function csv(rows){if(!rows.length)return"";const h=Object.keys(rows[0]);const q=v=>{v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return [h.map(q).join(","),...rows.map(r=>h.map(k=>q(r[k])).join(","))].join("\r\n")}
+async function save(filename,data){if(!downloads){$("x-msg").textContent="Downloads aren't available in this view.";return}
+  try{await downloads.save({filename,data});$("x-msg").textContent="Saved "+filename;return true}catch(e){$("x-msg").textContent=e&&e.code==="declined"?"Download cancelled.":"Couldn't save the file here.";return false}}
+const stamp=()=>today();
+$("x-csv-e").onclick=()=>{const r=expRows();if(!r.length)return $("x-msg").textContent="No exposures to export yet.";save("exposures-"+stamp()+".csv","﻿"+csv(r))};
+$("x-csv-a").onclick=()=>{const r=avRows();if(!r.length)return $("x-msg").textContent="Nothing to export yet.";save("considered-not-done-"+stamp()+".csv","﻿"+csv(r))};
+$("x-csv-w").onclick=()=>{const r=wkRows();if(!r.length)return $("x-msg").textContent="No weekly notes yet.";save("weekly-notes-"+stamp()+".csv","﻿"+csv(r))};
+$("x-xlsx").onclick=()=>{if(!window.XLSX){$("x-msg").textContent="Excel export didn't load here. Use the CSV buttons; they open in Excel.";return}
+  const wb=XLSX.utils.book_new();const add=(rows,name,blank)=>XLSX.utils.book_append_sheet(wb,rows.length?XLSX.utils.json_to_sheet(rows):XLSX.utils.aoa_to_sheet([blank]),name);
+  add(expRows(),"Exposures",["Date","Activity"]);add(avRows(),"Considered not done",["Date","What I considered"]);add(wkRows(),"Weekly notes",["Week of"]);add(stRows(),"Pyramid",["Step","Activity"]);
+  const buf=XLSX.write(wb,{bookType:"xlsx",type:"array"});save("rewild-"+stamp()+".xlsx",buf)};
 
-/* offline */
-if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+/* ---------- phone sync ---------- */
+const strip=o=>{const c=Object.assign({},o);delete c.id;return c};
+$("x-import").addEventListener("change",async e=>{const f=e.target.files[0];const msg=$("x-sync-msg");if(!f)return;
+    let d;try{d=JSON.parse(await f.text())}catch(err){msg.textContent="That file isn't a Rewild backup.";return}
+  if(!d||d.app!=="rewild"||!Array.isArray(d.exposures)){msg.textContent="That file isn't a Rewild backup.";return}
+  msg.textContent="Importing…";let added=0,updated=0,removed=0,failed=0;
+  for(const kind of ["pyramid","exposures","avoidance","weeks"]){for(const it of (d[kind]||[])){if(!it||!it.id)continue;const loc=kind==="weeks"?Object.values(S.weeks).find(x=>x.id===it.id):S[kind].find(x=>x.id===it.id);
+    if(!loc||(it.updatedAt||0)>(loc.updatedAt||0)){try{await db.collection(kind).doc(it.id).set(strip(it));loc?updated++:added++}catch(err){failed++}}}}
+  for(const dl of (d.deleted||[])){if(!dl||!["pyramid","exposures","avoidance","weeks"].includes(dl.kind))continue;const loc=dl.kind==="weeks"?Object.values(S.weeks).find(x=>x.id===dl.id):S[dl.kind].find(x=>x.id===dl.id);
+    if(loc&&(loc.updatedAt||0)<=dl.deletedAt){try{await db.collection(dl.kind).doc(dl.id).delete();removed++}catch(err){failed++}}}
+  e.target.value="";msg.textContent="Restored: "+added+" new, "+updated+" updated, "+removed+" deleted"+(failed?", "+failed+" couldn't be saved (try again)":"")+"."});
+$("x-phone").onclick=()=>{const payload={app:"rewild",kind:"backup",version:2,exportedAt:Date.now(),exposures:S.exposures,avoidance:S.avoidance,pyramid:S.pyramid,weeks:Object.values(S.weeks),deleted:LOCAL.deleted()};
+  save("rewild-backup-"+stamp()+".json",JSON.stringify(payload)).then(ok=>{if(ok){LOCAL.markBackup();$("x-sync-msg").textContent="Backup saved."}})};
+
+/* ---------- boot ---------- */
 resetExp();resetAv();route();
+(async()=>{
+  downloads=LOCAL.downloads; db=LOCAL.db;
+  if(!db){const b=$("banner");b.hidden=false;b.textContent="Saving isn't available in this view. Open this page in Claude while signed in to log entries.";document.querySelectorAll("form button[type=submit]").forEach(x=>x.disabled=true);return}
+  const sub=(name,fn)=>db.collection(name).onSnapshot(snap=>{fn(snap.docs.filter(d=>d.exists).map(d=>Object.assign({id:d.id},d.data())));render()},err=>{const b=$("banner");b.hidden=false;b.textContent="Lost the connection to your saved entries. Reload the page to reconnect."});
+  sub("exposures",a=>S.exposures=a);
+  sub("avoidance",a=>S.avoidance=a);
+  sub("pyramid",a=>{S.pyramid=a;if(!editExp&&!$("e-step").value){const cur=sortedSteps().find(p=>p.status==="Current");if(cur){fillStepSelect();$("e-step").value=cur.id}}});
+  sub("weeks",a=>{S.weeks={};a.forEach(w=>S.weeks[w.weekStart||w.id]=w)});
+  setTimeout(()=>{const n=S.exposures.length+S.avoidance.length;const last=LOCAL.lastBackupAt();if(n&&Date.now()-last>14*864e5){const b=$("banner");b.hidden=false;b.textContent=(last?"It's been over two weeks since your last backup.":"You haven't saved a backup yet.")+" Your entries live only on this device; save one from Export.";}},300);
+})();
 })();
 </script>
+
 </body></html>
