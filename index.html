@@ -130,7 +130,7 @@ window.LOCAL=(function(){
   function configured(){return !!(st.sync.url&&st.sync.passcode)}
   function schedule(){if(!configured())return;clearTimeout(timer);timer=setTimeout(()=>sync().catch(()=>{}),3000)}
   async function sync(){
-    if(!configured()){statusFn("Not connected to a Google Sheet yet.");return}
+    if(!configured()){statusFn("");return}
     if(busy)return; if(navigator.onLine===false){statusFn("Offline. Entries are saved on this device and will sync when you have signal.");return}
     busy=true;statusFn("Syncing…");
     const since=st.sync.lastSyncAt||0, start=Date.now();
@@ -376,8 +376,8 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
     <section class="panel" id="sync-panel">
       <h2>Google Sheet sync</h2>
       <p class="hint">Connect your own Google Sheet so every device stays in sync and your entries are stored long term in your Google Drive. Entries still save on this device first, so Rewild works without signal.</p>
-      <label>Sheet sync link<small>The Web app URL from your Sheet's Apps Script deployment.</small><input type="url" id="g-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
-      <label>Passcode<small>The same passcode you put in the script. Use the same link and passcode on every device.</small><input type="text" id="g-pass" autocomplete="off" spellcheck="false"></label>
+      <label>Sheet sync link<input type="url" id="g-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
+      <label>Passcode<input type="text" id="g-pass" autocomplete="off" spellcheck="false"></label>
       <div class="actions"><button type="button" class="primary" id="g-save">Connect and sync</button><button type="button" id="g-now">Sync now</button><button type="button" class="link" id="g-gen">Make a passcode</button></div>
       <p class="meta" id="g-status"></p>
     </section>
@@ -625,7 +625,6 @@ resetExp();resetAv();route();
   sub("avoidance",a=>S.avoidance=a);
   sub("pyramid",a=>{S.pyramid=a;if(!editExp&&!$("e-step").value){const cur=sortedSteps().find(p=>p.status==="Current");if(cur){fillStepSelect();$("e-step").value=cur.id}}});
   sub("weeks",a=>{S.weeks={};a.forEach(w=>S.weeks[w.weekStart||w.id]=w)});
-  setTimeout(()=>{const n=S.exposures.length+S.avoidance.length;const last=LOCAL.lastBackupAt();if(n&&Date.now()-last>14*864e5){const b=$("banner");b.hidden=false;b.textContent=(last?"It's been over two weeks since your last backup.":"You haven't saved a backup yet.")+" Your entries live only on this device; save one from Export.";}},300);
 })();
 })();
 </script>
@@ -636,7 +635,7 @@ resetExp();resetAv();route();
   const set=m=>{$("g-status").textContent=m;$("sync-chip").textContent=m};
   LOCAL.onStatus(set);
   const cfg=LOCAL.getSync();$("g-url").value=cfg.url||"";$("g-pass").value=cfg.passcode||"";
-  set(cfg.url&&cfg.passcode?(cfg.lastOkAt?"Last synced "+new Date(cfg.lastOkAt).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+".":"Connected; not synced yet."):"Not connected to a Google Sheet yet. Set it up in Export.");
+  set(cfg.url&&cfg.passcode?(cfg.lastOkAt?"Last synced "+new Date(cfg.lastOkAt).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+".":"Connected; not synced yet."):"");
   $("g-gen").onclick=()=>{const a=new Uint8Array(12);crypto.getRandomValues(a);$("g-pass").value=Array.from(a,b=>"abcdefghjkmnpqrstuvwxyz23456789"[b%31]).join("");$("g-status").textContent="Passcode made. Copy it into the script too, exactly as shown."};
   $("g-save").onclick=()=>{const u=$("g-url").value.trim(),p=$("g-pass").value.trim();if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){$("g-status").textContent="That doesn't look like an Apps Script web app link. It should start with https://script.google.com/";return}if(!p){$("g-status").textContent="Add the passcode first.";return}LOCAL.setSync(u,p);LOCAL.sync()};
   $("g-now").onclick=()=>LOCAL.sync();
