@@ -53,7 +53,7 @@ h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut
 .hint{color:var(--muted);font-size:.88rem;margin:0}
 label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:.92rem;min-width:0}
 label small{font-weight:400;color:var(--muted)}
-input,select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input,select,textarea{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
 textarea{min-height:72px;resize:vertical}
 .row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .suds{display:grid;gap:12px;grid-template-columns:repeat(4,1fr)}
@@ -105,6 +105,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
+.bw-ctl{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;justify-content:space-between}
 .breathe-btn{margin-left:auto;align-self:center;position:relative;display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-weight:700;font-size:.9rem;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.18);background:linear-gradient(90deg,#5f9a76,#d9773c);border-radius:999px;padding:7px 15px;white-space:nowrap;box-shadow:0 2px 8px rgba(217,119,60,.25)}
 .breathe-btn .bdot{width:10px;height:10px;border-radius:50%;background:#fff;flex:none}
 .breathe-btn::after{content:"";position:absolute;inset:-6px;border-radius:999px;border:3px solid var(--ring);box-shadow:0 0 10px color-mix(in srgb,var(--ring) 50%,transparent);opacity:0;pointer-events:none}
@@ -131,6 +132,44 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .bw-count{font-variant-numeric:tabular-nums;color:var(--muted);margin:0;min-height:1.4em}
 .bw-after{text-align:center;font-family:var(--display);font-style:italic;font-size:1.05rem;margin:0;max-width:34ch}
 @media (prefers-reduced-motion: reduce){.bw-dot{transition:none!important}}
+
+/* Phone fit: tighter spacing so each screen needs less scrolling. Inputs stay at 16px so iPhone doesn't zoom in when you tap a field. */
+@media (max-width:520px){
+  body{padding-block:calc(8px + env(safe-area-inset-top,0px)) 28px}
+  :root{padding-top:0}
+  .wrap{gap:12px}
+  header.brand{gap:10px}
+  .logo{width:40px;height:40px}
+  header h1{font-size:1.95rem}
+  header p{font-size:.8rem;margin-top:2px}
+  .breathe-btn{padding:5px 11px;font-size:.84rem}
+  nav{display:grid;grid-template-columns:repeat(4,1fr);gap:0 2px}
+  nav a{padding:6px 2px;text-align:center;font-size:.86rem}
+  .panel{padding:14px;gap:10px}
+  h2{font-size:1.2rem}
+  label{font-size:.9rem;gap:3px}
+  label small{font-size:.8rem;line-height:1.35}
+  textarea{min-height:56px}
+  .row{gap:8px}
+  .suds{gap:8px}
+  .seg{gap:5px}
+  .seg label{padding:5px 10px;font-size:.88rem}
+  .hint{font-size:.84rem}
+  .bw-stage{gap:8px;padding:4px 0 0}
+  .bw-ring{width:min(220px,58vw,32vh)}
+  .bw-cue{font-size:1.35rem}
+  .bw-num{font-size:2.8rem}
+  #bw-pat label{padding:6px 13px}
+  #bw-pat input{position:absolute;opacity:0;width:1px;height:1px}
+  .suds{grid-template-columns:repeat(4,1fr);gap:6px}
+  .suds label{font-size:.8rem}
+  .stats{grid-template-columns:repeat(3,1fr);gap:6px}
+  .stat{padding:7px 9px}
+  .stat .n{font-size:1.2rem}
+  .stat .l{font-size:.72rem;line-height:1.25}
+  .success{font-size:.95rem;line-height:1.4;padding-left:12px}
+}
+@media (max-width:360px){.bw-ctl{flex-wrap:wrap} #bw-pat label{padding:5px 9px;font-size:.84rem} nav a{font-size:.8rem} header p{font-size:.74rem}}
 </style>
 <script>
 /* Local-only storage: everything stays in this browser on this device. */
@@ -426,17 +465,16 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
   <section id="v-breathe" class="wrap" style="gap:16px" hidden>
     <div class="panel">
       <h2>Breathe</h2>
-      <p class="hint">Follow the circle. Breathe in through your nose, out slowly through your mouth. You can keep walking.</p>
-      <div class="seg" id="bw-pat">
-        <label><input type="radio" name="bwp" value="slow" checked>Slow breathing</label>
-        <label><input type="radio" name="bwp" value="box">Box breathing</label>
-        <label><input type="radio" name="bwp" value="sigh">Double-inhale sigh</label>
+      <div class="bw-ctl">
+        <div class="seg" id="bw-pat" style="flex-wrap:nowrap">
+          <label><input type="radio" name="bwp" value="slow" checked>Slow</label>
+          <label><input type="radio" name="bwp" value="box">Box</label>
+          <label><input type="radio" name="bwp" value="sigh">Sigh</label>
+        </div>
+        <select id="bw-len" aria-label="How long" style="width:auto;flex:0 1 112px;min-width:0;padding:7px 4px"><option value="60">1 min</option><option value="180" selected>3 min</option><option value="300">5 min</option><option value="0">Until I stop</option></select>
       </div>
-      <p class="meta" id="bw-desc"></p>
-      <div class="row">
-        <label>How long<select id="bw-len"><option value="60">1 minute</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="0">Until I stop</option></select></label>
-        <label style="flex-direction:row;align-items:center;gap:8px;align-self:end"><input type="checkbox" id="bw-vib" style="width:auto">Buzz on each change</label>
-      </div>
+      <p class="meta" id="bw-desc" style="margin:0"></p>
+      <label id="bw-vib-wrap" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="bw-vib" style="width:auto">Buzz on each change</label>
       <div class="bw-stage">
         <button type="button" class="bw-ring" id="bw-start" aria-label="Start breathing"><span class="bw-dot" id="bw-dot"></span><span class="bw-num idle" id="bw-num"></span></button>
         <div class="bw-key"><span style="--sw:var(--bw-in)">Breathe in</span><span style="--sw:var(--bw-hold)">Hold</span><span style="--sw:var(--bw-out)">Breathe out</span></div>
@@ -776,16 +814,16 @@ $("x-phone").onclick=()=>{const payload={app:"rewild",kind:"backup",version:2,ex
   save("rewild-backup-"+stamp()+".json",JSON.stringify(payload)).then(ok=>{if(ok){LOCAL.markBackup();$("x-sync-msg").textContent="Backup saved."}})};
 
 /* ---------- breathe ---------- */
-const BW={slow:{d:"In for 4, out for 6. About six breaths a minute; the long out-breath does the calming.",ph:[["Breathe in",4,1],["Breathe out",6,.42]]},
-  box:{d:"In 4, hold 4, out 4, hold 4. Steadying when your thoughts are racing. If holding feels uncomfortable, use slow breathing instead.",ph:[["Breathe in",4,1],["Hold",4,1],["Breathe out",4,.42],["Hold",4,.42]]},
-  sigh:{d:"Two inhales through the nose (a full one, then a short top-up), then a long slow exhale. Good for a quick reset.",ph:[["Breathe in",2,.85],["A little more",1,1],["Long breath out",6,.42]]}};
+const BW={slow:{d:"Slow breathing: in for 4, out for 6. About six breaths a minute; the long out-breath does the calming.",ph:[["Breathe in",4,1],["Breathe out",6,.42]]},
+  box:{d:"Box breathing: in 4, hold 4, out 4, hold 4. Steadying when your thoughts are racing. If holding feels uncomfortable, use slow breathing instead.",ph:[["Breathe in",4,1],["Hold",4,1],["Breathe out",4,.42],["Hold",4,.42]]},
+  sigh:{d:"Double-inhale sigh: two inhales through the nose (a full one, then a short top-up), then a long slow exhale. Good for a quick reset.",ph:[["Breathe in",2,.85],["A little more",1,1],["Long breath out",6,.42]]}};
 let bwRun=null;
 function bwPat(){return (document.querySelector('input[name="bwp"]:checked')||{}).value||"slow"}
 function bwDesc(){$("bw-desc").textContent=BW[bwPat()].d}
 document.querySelectorAll('input[name="bwp"]').forEach(r=>r.addEventListener("change",()=>{bwDesc();if(bwRun){bwStop();bwStart()}}));
 async function bwStart(){const pat=BW[bwPat()],len=Number($("bw-len").value)*1000,t0=Date.now();let i=0,lock=null;
   try{lock=navigator.wakeLock&&await navigator.wakeLock.request("screen")}catch(e){}
-  $("bw-after").hidden=true;const btn=$("bw-start");btn.classList.add("running");btn.setAttribute("aria-label","Stop breathing");$("bw-num").classList.remove("idle");
+  $("bw-after").hidden=true;const btn=$("bw-start");try{btn.scrollIntoView({block:"center",behavior:"smooth"})}catch(e){}btn.classList.add("running");btn.setAttribute("aria-label","Stop breathing");$("bw-num").classList.remove("idle");
   const run=bwRun={lock,timers:[]};
   const step=()=>{if(bwRun!==run)return;
     if(len&&Date.now()-t0>=len&&i%pat.ph.length===0){bwStop(true);return}
@@ -803,7 +841,7 @@ function bwStop(done){if(!bwRun)return;bwRun.timers.forEach(t=>{clearTimeout(t);
 $("bw-start").onclick=()=>bwRun?bwStop():bwStart();
 window.addEventListener("hashchange",()=>{if(location.hash!=="#breathe")bwStop()});
 document.addEventListener("visibilitychange",async()=>{if(bwRun&&document.visibilityState==="visible"&&!bwRun.lock){try{bwRun.lock=await navigator.wakeLock.request("screen")}catch(e){}}});
-bwDesc();
+bwDesc();if(!navigator.vibrate)$("bw-vib-wrap").hidden=true;
 
 /* ---------- safety card ---------- */
 function busy(form){return document.activeElement&&document.activeElement.closest&&document.activeElement.closest(form)}
