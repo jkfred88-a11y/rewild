@@ -151,6 +151,7 @@ window.LOCAL=(function(){
   addEventListener("online",()=>schedule());
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")schedule()});
   setTimeout(()=>{if(configured())sync().catch(()=>{})},1200);
+  setInterval(()=>{if(configured()&&document.visibilityState==="visible"&&navigator.onLine!==false)sync().catch(()=>{})},180000);
   const db={collection(c){if(!st[c])st[c]={};if(!L[c])L[c]=[];return{
     doc(id){id=id||uid();return{id,
       set:d=>write(()=>{st[c][id]=JSON.parse(JSON.stringify(d))},c),
