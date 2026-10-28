@@ -211,7 +211,7 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
     <a href="#breathe" class="breathe-btn" aria-label="Breathe"><span class="bdot" aria-hidden="true"></span>Breathe</a>
   </header>
   <nav id="nav">
-    <a href="#safety">Safety</a><a href="#log">Log</a><a href="#breathe">Breathe</a><a href="#week">Week</a><a href="#pyramid">Pyramid</a><a href="#trends">Trends</a><a href="#export">Export</a><a href="#settings">Settings</a>
+    <a href="#safety">Safety</a><a href="#log">Log</a><a href="#breathe">Breathe</a><a href="#pyramid">Pyramid</a><a href="#week">Week</a><a href="#trends">Trends</a><a href="#export">Export</a><a href="#settings">Settings</a>
   </nav>
   <p class="meta" id="sync-chip" style="margin:-8px 0 0"></p>
   <div id="banner" class="banner" hidden></div>
@@ -438,7 +438,7 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
         <label style="flex-direction:row;align-items:center;gap:8px;align-self:end"><input type="checkbox" id="bw-vib" style="width:auto">Buzz on each change</label>
       </div>
       <div class="bw-stage">
-        <button type="button" class="bw-ring" id="bw-start" aria-label="Start breathing"><span class="bw-dot" id="bw-dot"></span><span class="bw-num idle" id="bw-num">Start</span></button>
+        <button type="button" class="bw-ring" id="bw-start" aria-label="Start breathing"><span class="bw-dot" id="bw-dot"></span><span class="bw-num idle" id="bw-num"></span></button>
         <div class="bw-key"><span style="--sw:var(--bw-in)">Breathe in</span><span style="--sw:var(--bw-hold)">Hold</span><span style="--sw:var(--bw-out)">Breathe out</span></div>
         <p class="bw-cue" id="bw-cue">Ready when you are</p>
         <p class="bw-count" id="bw-count"></p>
@@ -798,7 +798,7 @@ async function bwStart(){const pat=BW[bwPat()],len=Number($("bw-len").value)*100
     run.timers.push(setTimeout(()=>{clearInterval(iv);step()},sec*1000))};
   step()}
 function bwStop(done){if(!bwRun)return;bwRun.timers.forEach(t=>{clearTimeout(t);clearInterval(t)});try{bwRun.lock&&bwRun.lock.release()}catch(e){}bwRun=null;
-  const dot=$("bw-dot");dot.style.transition="transform 1.2s ease-in-out, background-color .6s ease";dot.style.transform="";dot.style.removeProperty("--bw-c");const btn=$("bw-start");btn.classList.remove("running");btn.setAttribute("aria-label","Start breathing");const nm=$("bw-num");nm.classList.add("idle");nm.textContent=done?"Again":"Start";
+  const dot=$("bw-dot");dot.style.transition="transform 1.2s ease-in-out, background-color .6s ease";dot.style.transform="";dot.style.removeProperty("--bw-c");const btn=$("bw-start");btn.classList.remove("running");btn.setAttribute("aria-label","Start breathing");const nm=$("bw-num");nm.classList.add("idle");nm.textContent="";
   $("bw-cue").textContent=done?"Done":"Ready when you are";$("bw-count").textContent="";$("bw-after").hidden=!done}
 $("bw-start").onclick=()=>bwRun?bwStop():bwStart();
 window.addEventListener("hashchange",()=>{if(location.hash!=="#breathe")bwStop()});
