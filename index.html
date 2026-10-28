@@ -90,6 +90,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .status{font-size:.78rem;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--chip)}
 .status.current{background:var(--accent);color:var(--accent-fg)}
 .success{margin:0;padding:4px 0 4px 16px;border-left:3px solid var(--accent);font-family:var(--display);font-style:italic;font-size:1.08rem;line-height:1.5;color:var(--fg);text-wrap:pretty}
+.sudsguide{margin:0 0 10px}.sudsguide summary{font-size:.88rem}
+.sg{display:flex;flex-direction:column;gap:8px;margin-top:8px;background:var(--sunk);border-radius:8px;padding:12px 14px;font-size:.9rem}
+.sg p{margin:0}.sg ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.sg table{border-collapse:collapse}.sg th{text-align:right;padding:2px 12px 2px 0;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600;vertical-align:top}.sg td{padding:2px 0}
 .empty{color:var(--muted);font-style:italic;font-family:var(--display);font-size:1.05rem;margin:0}
 .banner{background:var(--sunk);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;font-size:.9rem;color:var(--muted)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:500;z-index:20}
@@ -179,6 +183,26 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
       </fieldset>
       <div>
         <h3 style="margin-bottom:6px">SUDS, 0–100 <span style="text-transform:none;letter-spacing:0;font-weight:400">· rough numbers are enough</span></h3>
+        <details class="sudsguide" id="suds-guide"><summary>How to rate SUDS</summary>
+          <div class="sg">
+            <p>SUDS is how distressed or afraid you feel, not how hard you're working or what your heart rate is. A pounding heart on a climb with no fear is a low SUDS.</p>
+            <table>
+              <tr><th>0</th><td>Completely calm.</td></tr>
+              <tr><th>25</th><td>Noticeable, but easy to stay with.</td></tr>
+              <tr><th>50</th><td>Clearly uncomfortable; I can keep going.</td></tr>
+              <tr><th>75</th><td>Very hard to stay; a strong urge to leave.</td></tr>
+              <tr><th>100</th><td>The worst I've ever felt. October 10 on the trail is my reference point.</td></tr>
+            </table>
+            <p><b>When to rate each one</b></p>
+            <ul>
+              <li><b>Predicted:</b> before you go, the peak you expect.</li>
+              <li><b>Before:</b> right before you start.</li>
+              <li><b>Peak:</b> the highest point during. A rough memory afterward is fine; don't rate as you go.</li>
+              <li><b>After:</b> at the end, or within about ten minutes.</li>
+            </ul>
+            <p>Use the same anchors every time so the numbers mean the same thing next month. A high SUDS doesn't make an exposure a failure; it means you did something hard.</p>
+          </div>
+        </details>
         <div class="suds">
           <label>Predicted<input type="number" id="e-pred" min="0" max="100" inputmode="numeric"></label>
           <label>Before<input type="number" id="e-before" min="0" max="100" inputmode="numeric"></label>
