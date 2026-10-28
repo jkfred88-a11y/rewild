@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rewild</title>
-<meta name="theme-color" content="#3f6b55">
+<meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#141a16" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Rewild">
@@ -15,24 +15,24 @@
 <style>
 /* Layout: a calm single-column field journal; tabs across the top, the log form first. */
 :root{
-  --bg:#f5f6f2; --surface:#ffffff; --sunk:#eceee8; --fg:#1f2620; --muted:#5d665e; --line:#d7dbd2;
-  --accent:#3f6b55; --accent-fg:#ffffff; --peak:#b4552d; --before:#7a8a9e; --after:#3f6b55;
-  --c1:#3f6b55; --c2:#b4552d; --c3:#5a6fa8; --c4:#9a7b2f; --c5:#7d4f86;
-  --danger:#a33a2a; --chip:#e3e9e1;
+  --bg:#f7f3ec; --surface:#fffdf9; --sunk:#efe9df; --fg:#1d2a22; --muted:#66705f; --line:#e2dacb;
+  --accent:#2f5d46; --accent-fg:#ffffff; --peak:#c95a2e; --before:#8a94a6; --after:#2f5d46; --leaf:#e08a4f; --sun:#f3c58f;
+  --c1:#2f5d46; --c2:#c95a2e; --c3:#5a6fa8; --c4:#b9782f; --c5:#7d4f86;
+  --danger:#a33a2a; --chip:#ece4d6;
   --display:"Spectral", Georgia, "Times New Roman", serif;
   --body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r:10px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#141916; --surface:#1c231f; --sunk:#232b26; --fg:#e7ece6; --muted:#a3ada4; --line:#334039;
-  --accent:#8cc0a2; --accent-fg:#10201a; --peak:#e89470; --before:#a9b6c7; --after:#8cc0a2;
-  --c1:#8cc0a2; --c2:#e89470; --c3:#9fb0e3; --c4:#d6b866; --c5:#c9a1d3;
-  --danger:#f08c7a; --chip:#26322b; color-scheme:dark }}
+  --bg:#141a16; --surface:#1b231e; --sunk:#222b25; --fg:#eee9df; --muted:#a7ae9f; --line:#323d35;
+  --accent:#8fc2a5; --accent-fg:#10201a; --peak:#f0936a; --before:#a9b3c4; --after:#8fc2a5; --leaf:#e0864d; --sun:#f3c58f;
+  --c1:#8fc2a5; --c2:#f0936a; --c3:#9fb0e3; --c4:#e0b072; --c5:#c9a1d3;
+  --danger:#f08c7a; --chip:#2a332c; color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#141916; --surface:#1c231f; --sunk:#232b26; --fg:#e7ece6; --muted:#a3ada4; --line:#334039;
-  --accent:#8cc0a2; --accent-fg:#10201a; --peak:#e89470; --before:#a9b6c7; --after:#8cc0a2;
-  --c1:#8cc0a2; --c2:#e89470; --c3:#9fb0e3; --c4:#d6b866; --c5:#c9a1d3;
-  --danger:#f08c7a; --chip:#26322b; color-scheme:dark }
+  --bg:#141a16; --surface:#1b231e; --sunk:#222b25; --fg:#eee9df; --muted:#a7ae9f; --line:#323d35;
+  --accent:#8fc2a5; --accent-fg:#10201a; --peak:#f0936a; --before:#a9b3c4; --after:#8fc2a5; --leaf:#e0864d; --sun:#f3c58f;
+  --c1:#8fc2a5; --c2:#f0936a; --c3:#9fb0e3; --c4:#e0b072; --c5:#c9a1d3;
+  --danger:#f08c7a; --chip:#2a332c; color-scheme:dark }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
@@ -99,17 +99,31 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:500;z-index:20}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.9rem}
 @media (prefers-reduced-motion: no-preference){.panel{transition:border-color .2s}}
-@media (max-width:420px){.suds{grid-template-columns:1fr 1fr;gap:8px} header h1{font-size:1.7rem}}
+@media (max-width:420px){.suds{grid-template-columns:1fr 1fr;gap:8px} header h1{font-size:1.7rem} header p{font-size:.92rem} .logo{width:46px;height:46px} .breathe-btn{padding:5px 11px;font-size:.85rem}}
 
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
+.breathe-btn{margin-left:auto;align-self:center;text-decoration:none;font-weight:600;font-size:.9rem;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;padding:6px 14px;white-space:nowrap}
+.breathe-btn:hover{background:var(--accent);color:var(--accent-fg)}
+.bw-stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:12px 0 4px}
+.bw-ring{width:min(240px,64vw);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;position:relative}
+.bw-ring::before{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px dashed var(--line)}
+.bw-dot{grid-area:1/1;width:100%;aspect-ratio:1;border-radius:50%;background-color:var(--bw-c,var(--sun));background-image:radial-gradient(circle at 50% 38%,rgba(255,255,255,.38),rgba(255,255,255,0) 62%);transform:scale(.42);transition:transform 1s ease-in-out,background-color .6s ease}
+.bw-num{grid-area:1/1;z-index:1;font-family:var(--display);font-size:3.4rem;font-weight:600;color:#1d2a22;font-variant-numeric:tabular-nums;line-height:1}
+.bw-key{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:.85rem;color:var(--muted)}
+.bw-key span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--sw)}
+:root{--bw-in:#7fae8f;--bw-out:#eba06b;--bw-hold:#a9bdd4}
+.bw-cue{font-family:var(--display);font-size:1.6rem;font-weight:600;margin:0;min-height:1.4em;text-align:center}
+.bw-count{font-variant-numeric:tabular-nums;color:var(--muted);margin:0;min-height:1.4em}
+.bw-after{text-align:center;font-family:var(--display);font-style:italic;font-size:1.05rem;margin:0;max-width:34ch}
+@media (prefers-reduced-motion: reduce){.bw-dot{transition:none!important}}
 </style>
 <script>
 /* Local-only storage: everything stays in this browser on this device. */
 window.LOCAL=(function(){
   const KEY="rewild-v2", OLD="rewild-field-v1";
-  const cols=["exposures","avoidance","pyramid","weeks"];
-  let st={exposures:{},avoidance:{},pyramid:{},weeks:{},deleted:[],lastBackupAt:0,sync:{url:"",passcode:"",lastSyncAt:0,lastOkAt:0}};
+  const cols=["exposures","avoidance","pyramid","weeks","settings"];
+  let st={exposures:{},avoidance:{},pyramid:{},weeks:{},settings:{},deleted:[],lastBackupAt:0,sync:{url:"",passcode:"",lastSyncAt:0,lastOkAt:0}};
   try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.exposures)st=Object.assign(st,v)}catch(e){}
   try{const o=JSON.parse(localStorage.getItem(OLD));if(o&&Array.isArray(o.exposures)&&!st.migrated){
     ["exposures","avoidance","pyramid"].forEach(k=>(o[k]||[]).forEach(it=>{if(it&&it.id&&!st[k][it.id]){const c=Object.assign({},it);delete c.id;st[k][it.id]=c}}));
@@ -126,6 +140,7 @@ window.LOCAL=(function(){
   const uid=()=>"d-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
   function write(fn,c){const backup=JSON.stringify(st);fn();try{persist()}catch(e){st=JSON.parse(backup);return Promise.reject({code:"quota_exceeded"})}emit(c);schedule();return Promise.resolve()}
   if(!st.sync)st.sync={url:"",passcode:"",lastSyncAt:0,lastOkAt:0};
+  cols.forEach(c=>{if(!st[c])st[c]={}});
   let timer=null,busy=false,statusFn=()=>{};
   function configured(){return !!(st.sync.url&&st.sync.passcode)}
   function schedule(){if(!configured())return;clearTimeout(timer);timer=setTimeout(()=>sync().catch(()=>{}),3000)}
@@ -171,20 +186,18 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
 <div class="wrap">
   <header class="brand">
     <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M8 41h32" stroke="var(--line)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-      <path d="M24 41V21" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" fill="none"/>
-      <path d="M24 26c-1-7-7-11-14-10 0 7 6 11 14 10z" fill="var(--accent)"/>
-      <path d="M24 21c1-8 7-13 15-12 0 8-6 13-15 12z" fill="var(--c4)"/>
-      <path d="M24 26c-3-3-7-6-11-7" stroke="var(--surface)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-      <path d="M24 21c3-4 7-7 12-9" stroke="var(--surface)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M9 41h30" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M24 41V23M24 29C23 22 18 19 11 19.5 11 26 16 29.5 24 29z" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M24 23c1-7 6.5-11 14-10.5C38 19.5 32 23.5 24 23z" fill="var(--leaf)" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/>
     </svg>
     <div>
       <h1>Rewild</h1>
       <p>Reclaiming a life beyond fear.</p>
     </div>
+    <a href="#breathe" class="breathe-btn" aria-label="Breathe">Breathe</a>
   </header>
   <nav id="nav">
-    <a href="#log">Log</a><a href="#week">Week</a><a href="#trends">Trends</a><a href="#pyramid">Pyramid</a><a href="#export">Export</a>
+    <a href="#log">Log</a><a href="#week">Week</a><a href="#trends">Trends</a><a href="#pyramid">Pyramid</a><a href="#export">Export</a><a href="#breathe">Breathe</a><a href="#safety">Safety</a><a href="#settings">Settings</a>
   </nav>
   <p class="meta" id="sync-chip" style="margin:-8px 0 0"></p>
   <div id="banner" class="banner" hidden></div>
@@ -201,6 +214,27 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
         <label>Pyramid step<select id="e-step"></select></label>
       </div>
       <label>Activity<input type="text" id="e-activity" placeholder="Solo run, Shevlin Park 4-mile loop" required></label>
+      <fieldset id="g-types" style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
+        <legend style="font-weight:500;font-size:.92rem;margin-bottom:4px">Type of exposure <span class="hint" style="font-weight:400">· tap all that apply</span></legend>
+        <div class="seg" id="e-types">
+          <label><input type="checkbox" name="etype" value="Exertion">Exertion</label>
+          <label><input type="checkbox" name="etype" value="Solo">Solo</label>
+          <label><input type="checkbox" name="etype" value="Remote">Remote</label>
+          <label><input type="checkbox" name="etype" value="Social">Social</label>
+          <label><input type="checkbox" name="etype" value="Body sensation">Body sensation</label>
+        </div>
+      </fieldset>
+      <div class="row" id="g-radius">
+        <label>Distance from help<select id="e-radius">
+          <option value="">Not set</option>
+          <option value="1">1 · Town or paved path, help minutes away</option>
+          <option value="2">2 · Trail within about 1 mile of the car</option>
+          <option value="3">3 · 1–3 miles from a road, patchy cell</option>
+          <option value="4">4 · Over 3 miles out or no cell</option>
+          <option value="5">5 · Backcountry, rescue would take hours</option>
+        </select></label>
+        <label>Duration (minutes)<input type="number" id="e-dur" min="0" inputmode="numeric"></label>
+      </div>
       <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
         <legend style="font-weight:500;font-size:.92rem;margin-bottom:4px">Did I do this alone?</legend>
         <div class="seg" id="e-alone">
@@ -215,11 +249,11 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
           <div class="sg">
             <p>SUDS is how distressed or afraid you feel, not how hard you're working or what your heart rate is. A pounding heart on a climb with no fear is a low SUDS.</p>
             <table>
-              <tr><th>0</th><td>Completely calm.</td></tr>
-              <tr><th>25</th><td>Noticeable, but easy to stay with.</td></tr>
-              <tr><th>50</th><td>Clearly uncomfortable; I can keep going.</td></tr>
-              <tr><th>75</th><td>Very hard to stay; a strong urge to leave.</td></tr>
-              <tr><th>100</th><td>The worst I've ever felt. October 10 on the trail is my reference point.</td></tr>
+              <tr><th>0</th><td id="sg0">Completely calm.</td></tr>
+              <tr><th>25</th><td id="sg1">Noticeable, but easy to stay with.</td></tr>
+              <tr><th>50</th><td id="sg2">Clearly uncomfortable; I can keep going.</td></tr>
+              <tr><th>75</th><td id="sg3">Very hard to stay; a strong urge to leave.</td></tr>
+              <tr><th>100</th><td id="sg4">The worst I've ever felt. October 10 on the trail is my reference point.</td></tr>
             </table>
             <p><b>When to rate each one</b></p>
             <ul>
@@ -232,16 +266,24 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
           </div>
         </details>
         <div class="suds">
-          <label>Predicted<input type="number" id="e-pred" min="0" max="100" inputmode="numeric"></label>
+          <label id="g-pred">Predicted<input type="number" id="e-pred" min="0" max="100" inputmode="numeric"></label>
           <label>Before<input type="number" id="e-before" min="0" max="100" inputmode="numeric"></label>
           <label>Peak<input type="number" id="e-peak" min="0" max="100" inputmode="numeric"></label>
           <label>After<input type="number" id="e-after" min="0" max="100" inputmode="numeric"></label>
         </div>
       </div>
-      <label>What was going on today<small>Optional: sleep, illness, stress, anything else.</small><input type="text" id="e-context" placeholder="Slept 6 hours; interview tomorrow"></label>
-      <label>Avoidance and autonomy<small>Did I feel an urge to avoid, monitor, seek reassurance or change plans? How did I respond?</small><textarea id="e-auto"></textarea></label>
-      <label>Freeform<small>What surprised me? What did I learn? How did I experience myself or my body?</small><textarea id="e-free"></textarea></label>
-      <label>What did I reclaim?<small>What did I get to experience because I chose to do this?</small><textarea id="e-reclaim"></textarea></label>
+      <fieldset id="g-warn" style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">
+        <legend style="font-weight:500;font-size:.92rem;margin-bottom:4px">Any real warning signs? <span class="hint" style="font-weight:400">· aura, feeling faint, a device shock</span></legend>
+        <div class="seg"><label><input type="radio" name="warn" value="No" id="w-no">No</label><label><input type="radio" name="warn" value="Yes" id="w-yes">Yes</label></div>
+        <div id="warn-box" class="sg" hidden>
+          <p id="stoprule-text"></p>
+          <label>What happened<textarea id="e-warnnote" style="min-height:56px"></textarea></label>
+        </div>
+      </fieldset>
+      <label id="g-context">What was going on today<small>Optional: sleep, illness, stress, anything else.</small><input type="text" id="e-context" placeholder="Slept 6 hours; interview tomorrow"></label>
+      <label><span id="lb-auto">Avoidance and autonomy</span><small id="hn-auto">Did I feel an urge to avoid, monitor, seek reassurance or change plans? How did I respond?</small><textarea id="e-auto"></textarea></label>
+      <label><span id="lb-free">Freeform</span><small id="hn-free">What surprised me? What did I learn? How did I experience myself or my body?</small><textarea id="e-free"></textarea></label>
+      <label><span id="lb-reclaim">What did I reclaim?</span><small id="hn-reclaim">What did I get to experience because I chose to do this?</small><textarea id="e-reclaim"></textarea></label>
       <details id="e-more"><summary>Optional: what I expected / what happened</summary>
         <div class="row" style="margin-top:10px">
           <label>What I expected<textarea id="e-expected"></textarea></label>
@@ -276,6 +318,8 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
   <section id="v-week" class="wrap" style="gap:16px" hidden>
     <blockquote class="success">Success is not the absence of fear. It is an expanding ability to make meaningful choices without allowing fear to be the sole author of those choices.</blockquote>
     <div class="weeknav"><button id="wk-prev" aria-label="Previous week">←</button><h2 id="wk-label" style="text-align:center"></h2><button id="wk-next" aria-label="Next week">→</button></div>
+    <div class="actions"><button type="button" id="wk-copy">Copy week summary</button><span class="meta" id="wk-copy-msg"></span></div>
+    <textarea id="wk-copy-text" hidden style="min-height:160px"></textarea>
     <section class="panel">
       <h3>Exposure review</h3>
       <div class="stats" id="wk-stats"></div>
@@ -330,6 +374,8 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
           <label>GAD-7<input type="number" id="w-gad" min="0" max="21" inputmode="numeric"></label>
           <label>Life-Space Assessment<input type="number" id="w-lsa" step="any" inputmode="decimal"></label>
           <label>Athletic Identity (AIMS)<input type="number" id="w-aims" step="any" inputmode="decimal"></label>
+          <label>PCL-5 (0–80)<input type="number" id="w-pcl" min="0" max="80" inputmode="numeric"></label>
+          <label>TSK-Heart (17–68)<input type="number" id="w-tsk" min="17" max="68" inputmode="numeric"></label>
         </div>
       </details>
       <div class="actions"><button type="submit" class="primary" id="w-save">Save notes</button><span class="meta" id="w-saved"></span></div>
@@ -359,6 +405,74 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
       </div>
       <label>Notes<textarea id="s-notes" style="min-height:48px"></textarea></label>
       <div class="actions"><button type="submit" class="primary" id="s-save">Add step</button><button type="button" id="s-cancel" hidden>Cancel edit</button></div>
+    </form>
+  </section>
+
+  <!-- BREATHE -->
+  <section id="v-breathe" class="wrap" style="gap:16px" hidden>
+    <div class="panel">
+      <h2>Breathe</h2>
+      <p class="hint">Follow the circle. Breathe in through your nose, out slowly through your mouth. You can keep walking.</p>
+      <div class="seg" id="bw-pat">
+        <label><input type="radio" name="bwp" value="slow" checked>Slow breathing</label>
+        <label><input type="radio" name="bwp" value="box">Box breathing</label>
+        <label><input type="radio" name="bwp" value="sigh">Double-inhale sigh</label>
+      </div>
+      <p class="meta" id="bw-desc"></p>
+      <div class="row">
+        <label>How long<select id="bw-len"><option value="60">1 minute</option><option value="180" selected>3 minutes</option><option value="300">5 minutes</option><option value="0">Until I stop</option></select></label>
+        <label style="flex-direction:row;align-items:center;gap:8px;align-self:end"><input type="checkbox" id="bw-vib" style="width:auto">Buzz on each change</label>
+      </div>
+      <div class="bw-stage">
+        <div class="bw-ring"><div class="bw-dot" id="bw-dot"></div><span class="bw-num" id="bw-num"></span></div>
+        <div class="bw-key"><span style="--sw:var(--bw-in)">Breathe in</span><span style="--sw:var(--bw-hold)">Hold</span><span style="--sw:var(--bw-out)">Breathe out</span></div>
+        <p class="bw-cue" id="bw-cue">Ready when you are</p>
+        <p class="bw-count" id="bw-count"></p>
+        <div class="actions"><button type="button" class="primary" id="bw-start">Start</button></div>
+        <p class="bw-after" id="bw-after" hidden>Notice your feet on the ground. Name three things you can see and one thing you can hear. Then decide your next step.</p>
+      </div>
+      <details class="sg" style="margin-top:0"><summary>If this isn't anxiety</summary><p id="bw-stop"></p></details>
+    </div>
+  </section>
+
+  <!-- SAFETY -->
+  <section id="v-safety" class="wrap" style="gap:16px" hidden>
+    <form class="panel" id="f-safety" autocomplete="off">
+      <h2>Safety card</h2>
+      <p class="hint">Readable here without signal. Show it to someone who's helping you.</p>
+      <label>My heart and device<textarea id="sf-heart" placeholder="Long QT type 2. Subcutaneous ICD (left side). Medications…"></textarea></label>
+      <label>If I collapse<textarea id="sf-instr" placeholder="Call 911. Start CPR. My device may shock me; it's safe to touch me once it has."></textarea></label>
+      <label>Cardiology contact<textarea id="sf-cardio" style="min-height:56px"></textarea></label>
+      <label>Emergency contacts<textarea id="sf-contacts" style="min-height:56px"></textarea></label>
+      <div class="actions"><button type="submit" class="primary" id="sf-save">Save safety card</button><span class="meta" id="sf-msg"></span></div>
+    </form>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="v-settings" class="wrap" style="gap:16px" hidden>
+    <form class="panel" id="f-settings" autocomplete="off">
+      <h2>Settings</h2>
+      <h3>Fields on the log form</h3>
+      <div class="seg" id="st-show">
+        <label><input type="checkbox" value="types" checked>Exposure type</label>
+        <label><input type="checkbox" value="radius" checked>Distance and duration</label>
+        <label><input type="checkbox" value="warn" checked>Warning-sign check</label>
+        <label><input type="checkbox" value="pred" checked>Predicted SUDS</label>
+        <label><input type="checkbox" value="context" checked>What was going on</label>
+        <label><input type="checkbox" value="more" checked>Expected / happened</label>
+      </div>
+      <h3>SUDS anchors</h3>
+      <div class="row">
+        <label>0<input type="text" id="st-a0"></label><label>25<input type="text" id="st-a1"></label><label>50<input type="text" id="st-a2"></label>
+        <label>75<input type="text" id="st-a3"></label><label>100<input type="text" id="st-a4"></label>
+      </div>
+      <h3>Prompts</h3>
+      <label>First prompt title<input type="text" id="st-lb-auto"></label><label>First prompt question<input type="text" id="st-hn-auto"></label>
+      <label>Second prompt title<input type="text" id="st-lb-free"></label><label>Second prompt question<input type="text" id="st-hn-free"></label>
+      <label>Third prompt title<input type="text" id="st-lb-reclaim"></label><label>Third prompt question<input type="text" id="st-hn-reclaim"></label>
+      <h3>Stop rule</h3>
+      <label>Shown when I mark real warning signs<textarea id="st-stop"></textarea></label>
+      <div class="actions"><button type="submit" class="primary" id="st-save">Save settings</button><button type="button" id="st-reset">Restore defaults</button><span class="meta" id="st-msg"></span></div>
     </form>
   </section>
 
@@ -396,7 +510,19 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-const S={exposures:[],avoidance:[],pyramid:[],weeks:{}};
+const S={exposures:[],avoidance:[],pyramid:[],weeks:{},settings:{}};
+const DEF={anchors:["Completely calm.","Noticeable, but easy to stay with.","Clearly uncomfortable; I can keep going.","Very hard to stay; a strong urge to leave.","The worst I've ever felt. October 10 on the trail is my reference point."],
+  labels:{auto:["Avoidance and autonomy","Did I feel an urge to avoid, monitor, seek reassurance or change plans? How did I respond?"],free:["Freeform","What surprised me? What did I learn? How did I experience myself or my body?"],reclaim:["What did I reclaim?","What did I get to experience because I chose to do this?"]},
+  show:{types:true,radius:true,warn:true,pred:true,context:true,more:true},
+  stopRule:"Stop the activity. Sit or lie down somewhere safe. If you feel faint, have an aura, or your device shocked you, follow your cardiology plan and call 911 if symptoms don't settle. This is different from anxiety: don't push through it."};
+function cfg(){const a=S.settings.app||{};return{anchors:(a.anchors&&a.anchors.length===5)?a.anchors:DEF.anchors,labels:Object.assign({},DEF.labels,a.labels||{}),show:Object.assign({},DEF.show,a.show||{}),stopRule:a.stopRule||DEF.stopRule}}
+function applySettings(){const c=cfg();
+  c.anchors.forEach((t,i)=>{const e=$("sg"+i);if(e)e.textContent=t});
+  ["auto","free","reclaim"].forEach(k=>{$("lb-"+k).textContent=c.labels[k][0];$("hn-"+k).textContent=c.labels[k][1]});
+  $("g-types").hidden=!c.show.types;$("g-radius").hidden=!c.show.radius;$("g-warn").hidden=!c.show.warn;$("g-pred").hidden=!c.show.pred;$("g-context").hidden=!c.show.context;$("e-more").hidden=!c.show.more;
+  $("stoprule-text").textContent=c.stopRule;$("bw-stop").textContent="Aura, feeling faint or a device shock are warning signs, not anxiety. "+c.stopRule}
+function delayDays(x){if(!x.date||!x.createdAt)return null;const d=new Date(x.createdAt);const logged=iso(d);return Math.max(0,Math.round((parse(logged)-parse(x.date))/86400000))}
+const RADIUS={1:"Town or paved path",2:"Within about 1 mile of the car",3:"1–3 miles from a road",4:"Over 3 miles or no cell",5:"Backcountry"};
 let db=null, downloads=null, editExp=null, editAv=null, editStep=null, weekStart=mondayOf(today());
 
 /* ---------- dates ---------- */
@@ -417,12 +543,13 @@ function stepLabel(id){const p=stepById(id);return p?("Step "+p.n+": "+p.activit
 function sortedSteps(){return [...S.pyramid].sort((a,b)=>(a.n||0)-(b.n||0))}
 
 /* ---------- routing ---------- */
-const views=["log","week","trends","pyramid","export"];
+const views=["log","week","trends","pyramid","export","breathe","safety","settings"];
 function route(){const h=(location.hash||"#log").slice(1);const v=views.includes(h)?h:"log";views.forEach(x=>$("v-"+x).hidden=x!==v);document.querySelectorAll("#nav a").forEach(a=>{if(a.getAttribute("href")==="#"+v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});render()}
 window.addEventListener("hashchange",route);
 
 /* ---------- forms ---------- */
-function resetExp(){editExp=null;$("f-exp").reset();$("e-date").value=today();$("f-exp-title").textContent="Log an exposure";$("e-save").textContent="Save entry";$("e-cancel").hidden=true;const cur=sortedSteps().find(p=>p.status==="Current");$("e-step").value=cur?cur.id:""}
+function resetExp(){editExp=null;$("f-exp").reset();$("e-date").value=today();$("f-exp-title").textContent="Log an exposure";$("e-save").textContent="Save entry";$("e-cancel").hidden=true;const cur=sortedSteps().find(p=>p.status==="Current");$("e-step").value=cur?cur.id:"";$("w-no").checked=true;$("warn-box").hidden=true}
+document.querySelectorAll('input[name="warn"]').forEach(r=>r.addEventListener("change",()=>{$("warn-box").hidden=!$("w-yes").checked}));
 function resetAv(){editAv=null;$("f-av").reset();$("v-date").value=today();$("v-save").textContent="Save";$("v-cancel").hidden=true}
 function fillStepSelect(){const sel=$("e-step");const keep=sel.value;sel.innerHTML="";sel.append(el("option",{value:""},"No step / other"));sortedSteps().forEach(p=>sel.append(el("option",{value:p.id},"Step "+p.n+": "+p.activity)));sel.value=keep}
 
@@ -432,6 +559,8 @@ $("f-exp").addEventListener("submit",async e=>{e.preventDefault();if(!db)return 
     sudsPredicted:num($("e-pred").value),sudsBefore:num($("e-before").value),context:$("e-context").value.trim(),sudsPeak:num($("e-peak").value),sudsAfter:num($("e-after").value),
     avoidanceAutonomy:$("e-auto").value.trim(),freeform:$("e-free").value.trim(),reclaimed:$("e-reclaim").value.trim(),
     expected:$("e-expected").value.trim(),happened:$("e-happened").value.trim(),
+    types:[...document.querySelectorAll('input[name="etype"]:checked')].map(i=>i.value),radius:$("e-radius").value?Number($("e-radius").value):null,durationMin:$("e-dur").value===""?null:Math.max(0,Math.round(Number($("e-dur").value))||0),
+    warningSigns:$("w-yes").checked?"Yes":"No",warningNote:$("w-yes").checked?$("e-warnnote").value.trim():"",
     createdAt:editExp?(S.exposures.find(x=>x.id===editExp)||{}).createdAt||Date.now():Date.now(),updatedAt:Date.now()};
   $("e-save").disabled=true;
   try{await (editExp?db.collection("exposures").doc(editExp):db.collection("exposures").doc()).set(body);toast(editExp?"Entry updated":"Entry saved");resetExp()}
@@ -453,6 +582,8 @@ function loadExp(x){editExp=x.id;$("e-date").value=x.date||today();$("e-activity
   $("e-pred").value=x.sudsPredicted??"";$("e-context").value=x.context||"";$("e-before").value=x.sudsBefore??"";$("e-peak").value=x.sudsPeak??"";$("e-after").value=x.sudsAfter??"";
   $("e-auto").value=x.avoidanceAutonomy||"";$("e-free").value=x.freeform||"";$("e-reclaim").value=x.reclaimed||"";
   $("e-expected").value=x.expected||"";$("e-happened").value=x.happened||"";$("e-more").open=!!(x.expected||x.happened);
+  document.querySelectorAll('input[name="etype"]').forEach(i=>i.checked=(x.types||[]).includes(i.value));$("e-radius").value=x.radius??"";$("e-dur").value=x.durationMin??"";
+  (x.warningSigns==="Yes"?$("w-yes"):$("w-no")).checked=true;$("warn-box").hidden=x.warningSigns!=="Yes";$("e-warnnote").value=x.warningNote||"";
   $("f-exp-title").textContent="Edit entry";$("e-save").textContent="Save changes";$("e-cancel").hidden=false;location.hash="#log";$("f-exp").scrollIntoView({behavior:"smooth"})}
 function loadAv(x){editAv=x.id;$("v-date").value=x.date;$("v-kind").value=x.kind;$("v-what").value=x.what||"";$("v-note").value=x.note||"";$("v-save").textContent="Save changes";$("v-cancel").hidden=false;$("f-av").scrollIntoView({behavior:"smooth"})}
 
@@ -461,13 +592,17 @@ function expCard(x,full){
   const del=el("button",{type:"button",class:"link danger"},"Delete");
   del.onclick=()=>confirmInline(del,"Delete this entry",async()=>{try{await db.collection("exposures").doc(x.id).delete();toast("Deleted")}catch(e){toast("Couldn't delete.")}});
   const chips=el("div",{class:"chips"});
+  if(x.warningSigns==="Yes")chips.append(el("span",{class:"chip peak"},"Warning signs"));
   if(x.alone)chips.append(el("span",{class:"chip"},"Alone: "+x.alone));
+  (x.types||[]).forEach(t=>chips.append(el("span",{class:"chip"},t)));
+  if(x.radius)chips.append(el("span",{class:"chip"},"Distance "+x.radius+"/5"));
+  if(x.durationMin!=null)chips.append(el("span",{class:"chip"},x.durationMin+" min"));
   if(x.sudsPredicted!=null||x.sudsBefore!=null||x.sudsPeak!=null||x.sudsAfter!=null){chips.append(el("span",{class:"chip"},"Predicted "+(x.sudsPredicted??"–")),el("span",{class:"chip"},"Before "+(x.sudsBefore??"–")),el("span",{class:"chip peak"},"Peak "+(x.sudsPeak??"–")),el("span",{class:"chip"},"After "+(x.sudsAfter??"–")))}
   const card=el("div",{class:"entry"},
     el("div",{class:"top"},el("span",{class:"what"},x.activity||"Exposure"),el("span",{class:"meta"},fmt(x.date,{weekday:"short",month:"short",day:"numeric"}))),
     x.step?el("span",{class:"meta"},stepLabel(x.step)):null, chips);
   const ref=el("div",{class:"ref",style:"display:flex;flex-direction:column;gap:6px"});
-  [["What was going on",x.context],["Avoidance and autonomy",x.avoidanceAutonomy],["Freeform",x.freeform],["What I reclaimed",x.reclaimed],["Expected",x.expected],["What happened",x.happened]].forEach(([k,v])=>{if(v&&(full||k!=="Expected"&&k!=="What happened"))ref.append(el("p",null,el("b",null,k),v))});
+  [["Warning signs",x.warningNote],["What was going on",x.context],["Avoidance and autonomy",x.avoidanceAutonomy],["Freeform",x.freeform],["What I reclaimed",x.reclaimed],["Expected",x.expected],["What happened",x.happened]].forEach(([k,v])=>{if(v&&(full||k!=="Expected"&&k!=="What happened"))ref.append(el("p",null,el("b",null,k),v))});
   if(ref.childNodes.length)card.append(ref);
   if(db)card.append(el("div",{class:"actions"},el("button",{type:"button",class:"link",onclick:()=>loadExp(x)},"Edit"),del));
   return card}
@@ -479,7 +614,7 @@ function avCard(x){
   return c}
 
 /* ---------- render ---------- */
-function render(){fillStepSelect();renderRecent();renderWeek();renderTrends();renderPyramid()}
+function render(){applySettings();renderSafety();renderSettings();fillStepSelect();renderRecent();renderWeek();renderTrends();renderPyramid()}
 function byDateDesc(a,b){return (b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0)}
 function renderRecent(){const box=$("recent");box.innerHTML="";
   const items=[...S.exposures.map(x=>({t:"e",x})),...S.avoidance.map(x=>({t:"a",x}))].sort((p,q)=>byDateDesc(p.x,q.x)).slice(0,12);
@@ -500,14 +635,25 @@ function renderWeek(){
   const ab=$("wk-av");ab.innerHTML="";if(!av.length)ab.append(el("p",{class:"empty"},"Nothing logged as considered and not done. If that's not the whole story, it's worth naming in session."));av.forEach(x=>ab.append(avCard(x)));
   const w=S.weeks[ws]||{};
   if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#f-wk"))return;
-  $("w-avpat").value=w.avoidancePatterns||"";$("w-phase").value=w.phase||"";$("w-caq").value=w.caq??"";$("w-gad").value=w.gad7??"";$("w-lsa").value=w.lifeSpace??"";$("w-aims").value=w.aims??"";$("w-q").open=[w.caq,w.gad7,w.lifeSpace,w.aims].some(v=>v!=null&&v!=="");$("w-learn").value=w.learning||"";$("w-theme").value=w.theme||"";$("w-reflect").value=w.reflection||"";$("w-decision").value=w.decision||"";$("w-why").value=w.decisionWhy||"";$("w-next").value=w.nextExposures||"";
+  $("w-avpat").value=w.avoidancePatterns||"";$("w-phase").value=w.phase||"";$("w-caq").value=w.caq??"";$("w-gad").value=w.gad7??"";$("w-lsa").value=w.lifeSpace??"";$("w-aims").value=w.aims??"";$("w-pcl").value=w.pcl5??"";$("w-tsk").value=w.tskHeart??"";$("w-q").open=[w.caq,w.gad7,w.lifeSpace,w.aims,w.pcl5,w.tskHeart].some(v=>v!=null&&v!=="");$("w-learn").value=w.learning||"";$("w-theme").value=w.theme||"";$("w-reflect").value=w.reflection||"";$("w-decision").value=w.decision||"";$("w-why").value=w.decisionWhy||"";$("w-next").value=w.nextExposures||"";
   $("w-saved").textContent=w.updatedAt?"Saved "+new Date(w.updatedAt).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
 }
+function weekSummary(){const ws=weekStart,w=S.weeks[ws]||{};const ex=S.exposures.filter(x=>inWeek(x.date,ws)).sort((a,b)=>a.date.localeCompare(b.date));const av=S.avoidance.filter(x=>inWeek(x.date,ws));
+  const L=[];L.push("Rewild week of "+fmt(ws,{month:"long",day:"numeric",year:"numeric"})+(w.phase?" ("+w.phase+")":""));L.push("");
+  L.push("Exposures: "+ex.length+" (alone: "+ex.filter(x=>x.alone==="Yes").length+"). Considered and not done: "+av.length+".");
+  L.push("Average SUDS: predicted "+(avg(ex.map(x=>x.sudsPredicted))??"–")+", before "+(avg(ex.map(x=>x.sudsBefore))??"–")+", peak "+(avg(ex.map(x=>x.sudsPeak))??"–")+", after "+(avg(ex.map(x=>x.sudsAfter))??"–")+".");
+  const ws2=ex.filter(x=>x.warningSigns==="Yes");if(ws2.length)L.push("Warning signs on "+ws2.length+" entr"+(ws2.length===1?"y":"ies")+": "+ws2.map(x=>fmt(x.date)+(x.warningNote?" — "+x.warningNote:"")).join("; "));
+  L.push("");ex.forEach(x=>{L.push("• "+fmt(x.date,{weekday:"short",month:"short",day:"numeric"})+": "+(x.activity||"Exposure")+" — SUDS "+[x.sudsPredicted,x.sudsBefore,x.sudsPeak,x.sudsAfter].map(v=>v??"–").join("/")+" (pred/before/peak/after)"+(x.durationMin!=null?", "+x.durationMin+" min":"")+(x.radius?", distance "+x.radius+"/5":""));if(x.avoidanceAutonomy)L.push("   Avoidance: "+x.avoidanceAutonomy);if(x.reclaimed)L.push("   Reclaimed: "+x.reclaimed)});
+  if(av.length){L.push("");L.push("Considered and not done:");av.forEach(x=>L.push("• "+fmt(x.date)+": "+(x.what||"")+(x.note?" — "+x.note:"")))}
+  const q=[["CAQ",w.caq],["GAD-7",w.gad7],["Life-Space",w.lifeSpace],["AIMS",w.aims],["PCL-5",w.pcl5],["TSK-Heart",w.tskHeart]].filter(([,v])=>v!=null&&v!=="");if(q.length){L.push("");L.push("Questionnaires: "+q.map(([k,v])=>k+" "+v).join(", "))}
+  [["Avoidance patterns",w.avoidancePatterns],["Learning",w.learning],["Theme",w.theme],["Reflection",w.reflection],["Next step",w.decision],["Why",w.decisionWhy],["Next exposures",w.nextExposures]].forEach(([k,v])=>{if(v){L.push("");L.push(k+": "+v)}});
+  return L.join("\n")}
+$("wk-copy").onclick=async()=>{const t=weekSummary();const box=$("wk-copy-text");try{await navigator.clipboard.writeText(t);$("wk-copy-msg").textContent="Copied. Paste it into a message or note.";box.hidden=true}catch(e){box.value=t;box.hidden=false;box.focus();box.select();$("wk-copy-msg").textContent="Select all and copy the text below."}};
 $("wk-prev").onclick=()=>{weekStart=addDays(weekStart,-7);renderWeek()};
 $("wk-next").onclick=()=>{weekStart=addDays(weekStart,7);renderWeek()};
 $("f-wk").addEventListener("submit",async e=>{e.preventDefault();if(!db)return toast("Saving isn't available here.");
   const qn=v=>{if(v==="")return null;const n=Number(v);return isFinite(n)?n:null};
-  const body={weekStart:weekStart,avoidancePatterns:$("w-avpat").value.trim(),phase:$("w-phase").value,caq:qn($("w-caq").value),gad7:qn($("w-gad").value),lifeSpace:qn($("w-lsa").value),aims:qn($("w-aims").value),learning:$("w-learn").value.trim(),theme:$("w-theme").value,reflection:$("w-reflect").value.trim(),decision:$("w-decision").value,decisionWhy:$("w-why").value.trim(),nextExposures:$("w-next").value.trim(),updatedAt:Date.now()};
+  const body={weekStart:weekStart,avoidancePatterns:$("w-avpat").value.trim(),phase:$("w-phase").value,caq:qn($("w-caq").value),gad7:qn($("w-gad").value),lifeSpace:qn($("w-lsa").value),aims:qn($("w-aims").value),pcl5:qn($("w-pcl").value),tskHeart:qn($("w-tsk").value),learning:$("w-learn").value.trim(),theme:$("w-theme").value,reflection:$("w-reflect").value.trim(),decision:$("w-decision").value,decisionWhy:$("w-why").value.trim(),nextExposures:$("w-next").value.trim(),updatedAt:Date.now()};
   $("w-save").disabled=true;try{await db.collection("weeks").doc(weekStart).set(body);toast("Notes saved");document.activeElement.blur&&document.activeElement.blur()}catch(err){toast("Couldn't save. Try again.")}finally{$("w-save").disabled=false}});
 
 /* ---------- charts (hand-drawn SVG, one scale per chart) ---------- */
@@ -586,9 +732,9 @@ $("f-step").addEventListener("submit",async e=>{e.preventDefault();if(!db)return
 function expRows(){return [...S.exposures].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>{const p=stepById(x.step);return{
   "Date":x.date,"Week of":mondayOf(x.date),"Activity":x.activity||"","Pyramid step":p?p.n:"","Step activity":p?p.activity:"","Alone":x.alone||"","Phase":(S.weeks[mondayOf(x.date)]||{}).phase||"","SUDS predicted":x.sudsPredicted??"",
   "SUDS before":x.sudsBefore??"","SUDS peak":x.sudsPeak??"","SUDS after":x.sudsAfter??"","Drop (peak - after)":(x.sudsPeak!=null&&x.sudsAfter!=null)?x.sudsPeak-x.sudsAfter:"","Peak minus predicted":(x.sudsPeak!=null&&x.sudsPredicted!=null)?x.sudsPeak-x.sudsPredicted:"","What was going on":x.context||"",
-  "Avoidance and autonomy":x.avoidanceAutonomy||"","Freeform":x.freeform||"","What I reclaimed":x.reclaimed||"","Expected":x.expected||"","What happened":x.happened||""}})}
+  "Avoidance and autonomy":x.avoidanceAutonomy||"","Freeform":x.freeform||"","What I reclaimed":x.reclaimed||"","Expected":x.expected||"","What happened":x.happened||"","Exposure types":(x.types||[]).join(", "),"Distance from help (1-5)":x.radius??"","Duration (min)":x.durationMin??"","Warning signs":x.warningSigns||"","Warning note":x.warningNote||"","Logged (days after)":delayDays(x)??""}})}
 function avRows(){return [...S.avoidance].sort((a,b)=>a.date.localeCompare(b.date)).map(x=>({"Date":x.date,"Week of":mondayOf(x.date),"Phase":(S.weeks[mondayOf(x.date)]||{}).phase||"","Kind":x.kind||"","What I considered":x.what||"","Note":x.note||""}))}
-function wkRows(){return Object.values(S.weeks).sort((a,b)=>a.weekStart.localeCompare(b.weekStart)).map(w=>({"Week of":w.weekStart,"Phase":w.phase||"","Avoidance patterns":w.avoidancePatterns||"","Learning":w.learning||"","Theme":w.theme||"","Reflection":w.reflection||"","Next step":w.decision||"","Why":w.decisionWhy||"","Next exposures":w.nextExposures||"","CAQ":w.caq??"","GAD-7":w.gad7??"","Life-Space":w.lifeSpace??"","AIMS":w.aims??""}))}
+function wkRows(){return Object.values(S.weeks).sort((a,b)=>a.weekStart.localeCompare(b.weekStart)).map(w=>({"Week of":w.weekStart,"Phase":w.phase||"","Avoidance patterns":w.avoidancePatterns||"","Learning":w.learning||"","Theme":w.theme||"","Reflection":w.reflection||"","Next step":w.decision||"","Why":w.decisionWhy||"","Next exposures":w.nextExposures||"","CAQ":w.caq??"","GAD-7":w.gad7??"","Life-Space":w.lifeSpace??"","AIMS":w.aims??"","PCL-5":w.pcl5??"","TSK-Heart":w.tskHeart??""}))}
 function stRows(){return sortedSteps().map(p=>{const xs=S.exposures.filter(x=>x.step===p.id);const pk=xs.map(x=>x.sudsPeak).filter(v=>v!=null);return{"Step":p.n,"Activity":p.activity,"Status":p.status||"","Predicted SUDS":p.predicted??"","Times done":xs.length,"Lowest peak SUDS":pk.length?Math.min(...pk):"","Notes":p.notes||""}})}
 function csv(rows){if(!rows.length)return"";const h=Object.keys(rows[0]);const q=v=>{v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};return [h.map(q).join(","),...rows.map(r=>h.map(k=>q(r[k])).join(","))].join("\r\n")}
 async function save(filename,data){if(!downloads){$("x-msg").textContent="Downloads aren't available in this view.";return}
@@ -608,13 +754,60 @@ $("x-import").addEventListener("change",async e=>{const f=e.target.files[0];cons
     let d;try{d=JSON.parse(await f.text())}catch(err){msg.textContent="That file isn't a Rewild backup.";return}
   if(!d||d.app!=="rewild"||!Array.isArray(d.exposures)){msg.textContent="That file isn't a Rewild backup.";return}
   msg.textContent="Importing…";let added=0,updated=0,removed=0,failed=0;
-  for(const kind of ["pyramid","exposures","avoidance","weeks"]){for(const it of (d[kind]||[])){if(!it||!it.id)continue;const loc=kind==="weeks"?Object.values(S.weeks).find(x=>x.id===it.id):S[kind].find(x=>x.id===it.id);
+  for(const kind of ["pyramid","exposures","avoidance","weeks","settings"]){for(const it of (d[kind]||[])){if(!it||!it.id)continue;const loc=kind==="weeks"?Object.values(S.weeks).find(x=>x.id===it.id):kind==="settings"?S.settings[it.id]:S[kind].find(x=>x.id===it.id);
     if(!loc||(it.updatedAt||0)>(loc.updatedAt||0)){try{await db.collection(kind).doc(it.id).set(strip(it));loc?updated++:added++}catch(err){failed++}}}}
   for(const dl of (d.deleted||[])){if(!dl||!["pyramid","exposures","avoidance","weeks"].includes(dl.kind))continue;const loc=dl.kind==="weeks"?Object.values(S.weeks).find(x=>x.id===dl.id):S[dl.kind].find(x=>x.id===dl.id);
     if(loc&&(loc.updatedAt||0)<=dl.deletedAt){try{await db.collection(dl.kind).doc(dl.id).delete();removed++}catch(err){failed++}}}
   e.target.value="";msg.textContent="Restored: "+added+" new, "+updated+" updated, "+removed+" deleted"+(failed?", "+failed+" couldn't be saved (try again)":"")+"."});
-$("x-phone").onclick=()=>{const payload={app:"rewild",kind:"backup",version:2,exportedAt:Date.now(),exposures:S.exposures,avoidance:S.avoidance,pyramid:S.pyramid,weeks:Object.values(S.weeks),deleted:LOCAL.deleted()};
+$("x-phone").onclick=()=>{const payload={app:"rewild",kind:"backup",version:2,exportedAt:Date.now(),exposures:S.exposures,avoidance:S.avoidance,pyramid:S.pyramid,weeks:Object.values(S.weeks),settings:Object.values(S.settings),deleted:LOCAL.deleted()};
   save("rewild-backup-"+stamp()+".json",JSON.stringify(payload)).then(ok=>{if(ok){LOCAL.markBackup();$("x-sync-msg").textContent="Backup saved."}})};
+
+/* ---------- breathe ---------- */
+const BW={slow:{d:"In for 4, out for 6. About six breaths a minute; the long out-breath does the calming.",ph:[["Breathe in",4,1],["Breathe out",6,.42]]},
+  box:{d:"In 4, hold 4, out 4, hold 4. Steadying when your thoughts are racing. If holding feels uncomfortable, use slow breathing instead.",ph:[["Breathe in",4,1],["Hold",4,1],["Breathe out",4,.42],["Hold",4,.42]]},
+  sigh:{d:"Two inhales through the nose (a full one, then a short top-up), then a long slow exhale. Good for a quick reset.",ph:[["Breathe in",2,.85],["A little more",1,1],["Long breath out",6,.42]]}};
+let bwRun=null;
+function bwPat(){return (document.querySelector('input[name="bwp"]:checked')||{}).value||"slow"}
+function bwDesc(){$("bw-desc").textContent=BW[bwPat()].d}
+document.querySelectorAll('input[name="bwp"]').forEach(r=>r.addEventListener("change",()=>{bwDesc();if(bwRun){bwStop();bwStart()}}));
+async function bwStart(){const pat=BW[bwPat()],len=Number($("bw-len").value)*1000,t0=Date.now();let i=0,lock=null;
+  try{lock=navigator.wakeLock&&await navigator.wakeLock.request("screen")}catch(e){}
+  $("bw-after").hidden=true;$("bw-start").textContent="Stop";
+  const run=bwRun={lock,timers:[]};
+  const step=()=>{if(bwRun!==run)return;
+    if(len&&Date.now()-t0>=len&&i%pat.ph.length===0){bwStop(true);return}
+    const [cue,sec,sc]=pat.ph[i%pat.ph.length];i++;
+    const kind=cue.startsWith("Hold")?"hold":cue.includes("out")?"out":"in";
+    const dot=$("bw-dot");dot.style.transition="transform "+sec+"s ease-in-out, background-color .6s ease";dot.style.transform="scale("+sc+")";dot.style.setProperty("--bw-c","var(--bw-"+kind+")");
+    $("bw-cue").textContent=cue;let n=1;$("bw-num").textContent=n;$("bw-count").textContent=sec+" count"+(sec===1?"":"s");
+    if($("bw-vib").checked&&navigator.vibrate)navigator.vibrate(cue.startsWith("Hold")?[30,60,30]:60);
+    const iv=setInterval(()=>{n++;if(n<=sec)$("bw-num").textContent=n},1000);run.timers.push(iv);
+    run.timers.push(setTimeout(()=>{clearInterval(iv);step()},sec*1000))};
+  step()}
+function bwStop(done){if(!bwRun)return;bwRun.timers.forEach(t=>{clearTimeout(t);clearInterval(t)});try{bwRun.lock&&bwRun.lock.release()}catch(e){}bwRun=null;
+  const dot=$("bw-dot");dot.style.transition="transform 1.2s ease-in-out, background-color .6s ease";dot.style.transform="scale(.42)";dot.style.removeProperty("--bw-c");$("bw-num").textContent="";
+  $("bw-cue").textContent=done?"Done":"Ready when you are";$("bw-count").textContent="";$("bw-start").textContent=done?"Again":"Start";$("bw-after").hidden=!done}
+$("bw-start").onclick=()=>bwRun?bwStop():bwStart();
+window.addEventListener("hashchange",()=>{if(location.hash!=="#breathe")bwStop()});
+document.addEventListener("visibilitychange",async()=>{if(bwRun&&document.visibilityState==="visible"&&!bwRun.lock){try{bwRun.lock=await navigator.wakeLock.request("screen")}catch(e){}}});
+bwDesc();
+
+/* ---------- safety card ---------- */
+function busy(form){return document.activeElement&&document.activeElement.closest&&document.activeElement.closest(form)}
+function renderSafety(){if(busy("#f-safety"))return;const s=S.settings.safety||{};$("sf-heart").value=s.heart||"";$("sf-instr").value=s.instructions||"";$("sf-cardio").value=s.cardiology||"";$("sf-contacts").value=s.contacts||"";
+  $("sf-msg").textContent=s.updatedAt?"Saved "+new Date(s.updatedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"}):""}
+$("f-safety").addEventListener("submit",async e=>{e.preventDefault();if(!db)return;
+  try{await db.collection("settings").doc("safety").set({heart:$("sf-heart").value.trim(),instructions:$("sf-instr").value.trim(),cardiology:$("sf-cardio").value.trim(),contacts:$("sf-contacts").value.trim(),updatedAt:Date.now()});document.activeElement.blur&&document.activeElement.blur();toast("Safety card saved")}catch(err){toast("Couldn't save. Try again.")}});
+
+/* ---------- settings ---------- */
+function renderSettings(){if(busy("#f-settings"))return;const c=cfg();
+  c.anchors.forEach((t,i)=>$("st-a"+i).value=t);["auto","free","reclaim"].forEach(k=>{$("st-lb-"+k).value=c.labels[k][0];$("st-hn-"+k).value=c.labels[k][1]});
+  document.querySelectorAll("#st-show input").forEach(i=>i.checked=c.show[i.value]!==false);$("st-stop").value=c.stopRule}
+$("f-settings").addEventListener("submit",async e=>{e.preventDefault();if(!db)return;
+  const anchors=[0,1,2,3,4].map(i=>$("st-a"+i).value.trim()||DEF.anchors[i]);const labels={};["auto","free","reclaim"].forEach(k=>labels[k]=[$("st-lb-"+k).value.trim()||DEF.labels[k][0],$("st-hn-"+k).value.trim()]);
+  const show={};document.querySelectorAll("#st-show input").forEach(i=>show[i.value]=i.checked);
+  try{await db.collection("settings").doc("app").set({anchors,labels,show,stopRule:$("st-stop").value.trim()||DEF.stopRule,updatedAt:Date.now()});document.activeElement.blur&&document.activeElement.blur();toast("Settings saved")}catch(err){toast("Couldn't save. Try again.")}});
+$("st-reset").onclick=async()=>{if(!db)return;try{await db.collection("settings").doc("app").set({anchors:DEF.anchors,labels:DEF.labels,show:DEF.show,stopRule:DEF.stopRule,updatedAt:Date.now()});toast("Defaults restored")}catch(err){toast("Couldn't save.")}};
 
 /* ---------- boot ---------- */
 resetExp();resetAv();route();
@@ -626,6 +819,7 @@ resetExp();resetAv();route();
   sub("avoidance",a=>S.avoidance=a);
   sub("pyramid",a=>{S.pyramid=a;if(!editExp&&!$("e-step").value){const cur=sortedSteps().find(p=>p.status==="Current");if(cur){fillStepSelect();$("e-step").value=cur.id}}});
   sub("weeks",a=>{S.weeks={};a.forEach(w=>S.weeks[w.weekStart||w.id]=w)});
+  sub("settings",a=>{S.settings={};a.forEach(d=>S.settings[d.id]=d)});
 })();
 })();
 </script>
